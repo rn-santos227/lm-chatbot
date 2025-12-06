@@ -1,7 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import fetch from "node-fetch";
 
-import { LMMessage, LMChatResponse } from "./type";
+import { LMMessage, LMChatResponse } from "./types";
 
 const lm = Meteor.settings.lmstudio;
 
