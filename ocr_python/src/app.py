@@ -15,3 +15,16 @@ class OCRResponse(BaseModel):
     bucket: str
     key: str
 
+@app.post("/ocr", response_model=OCRResponse)
+def do_ocr(req: OCRRequest):
+    # Download from MinIO
+    file_bytes = fetch_file(req.bucket, req.key)
+
+    # Perform OCR
+    text = run_ocr(file_bytes, req.mime_type)
+
+    return OCRResponse(
+        text=text,
+        bucket=req.bucket,
+        key=req.key,
+    )
