@@ -1,4 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
-  padding: 10px;
-  font-family: sans-serif;
+  @apply bg-gray-100 text-gray-900 font-sans;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-200;
+}
+
+.chat-scroll {
+  @apply overflow-y-auto p-4 bg-white border rounded-lg;
+}
+
+.msg-user {
+  @apply bg-blue-500 text-white p-3 rounded-lg max-w-[80%] ml-auto mb-3 shadow;
+}
+
+.msg-ai {
+  @apply bg-gray-200 text-gray-900 p-3 rounded-lg max-w-[80%] mr-auto mb-3 shadow;
+}
+
+.file-item {
+  @apply p-2 rounded cursor-pointer hover:bg-gray-200;
+}
+
+.file-item-active {
+  @apply bg-blue-100 font-semibold;
+}
+
+.chat-input {
+  @apply flex gap-3 mt-3;
+}
+
+.chat-textarea {
+  @apply flex-1 h-24 p-3 border rounded-lg resize-none;
+}
+
+.chat-button {
+  @apply bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 transition;
 }
