@@ -10,8 +10,6 @@ s3 = boto3.client(
     region_name=settings.MINIO_REGION,
 )
 
-
 def fetch_file(bucket: str, key: str) -> bytes:
-    """Download a file from MinIO as raw bytes."""
     obj = s3.get_object(Bucket=bucket, Key=key)
     return obj["Body"].read()
