@@ -28,7 +28,27 @@ WebApp.connectHandlers.use("/upload", (req, res, next) => {
 
   req.on("end", async () => {
     try {
+      const buffer = Buffer.concat(chunks);
 
+      await minioClient.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: fileName,
+          Body: buffer,
+          ContentType: contentType,
+        })
+      );
+
+      const finalUrl = `${minio.publicBaseUrl}/${bucket}/${fileName}`;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          url: finalUrl,
+          bucket,
+          key: fileName,
+          contentType,
+        })
+      );
     } catch (err) {
       console.error("Upload error:", err);
 

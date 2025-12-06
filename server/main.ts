@@ -1,5 +1,8 @@
 import { Meteor } from 'meteor/meteor';
 
+import "./minio/client"
+import "./minio/upload"
+
 Meteor.startup(async () => {
   const minio = Meteor.settings.minio;
   
