@@ -22,6 +22,15 @@ WebApp.connectHandlers.use("/upload", (req, res, next) => {
 
   const fileName = `${Random.id()}-${originalName}`;
   const bucket = minio.bucket;
+
   const chunks: Uint8Array[] = [];
   req.on("data", (chunk) => chunks.push(chunk));
+
+  req.on("end", async () => {
+    try {
+
+    } catch (err) {
+
+    }
+  });
 });
