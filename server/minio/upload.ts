@@ -6,4 +6,8 @@ import {
 } from "@aws-sdk/client-s3";
 import { minioClient } from "./client"
 
+const minio = Meteor.settings.minio;
 
+WebApp.connectHandlers.use("/upload", (req, res, next) => {
+
+});
