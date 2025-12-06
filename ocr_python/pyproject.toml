@@ -1,0 +1,15 @@
+[project]
+name = "poetry add fastapi uvicorn boto3 pillow pytesseract pdf2image python-dotenv"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "rn-santos227",email = "rnsantos227@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
