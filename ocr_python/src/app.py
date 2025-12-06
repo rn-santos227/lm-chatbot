@@ -9,3 +9,9 @@ class OCRRequest(BaseModel):
     bucket: str
     key: str
     mime_type: str
+
+class OCRResponse(BaseModel):
+    text: str
+    bucket: str
+    key: str
+
