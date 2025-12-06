@@ -30,7 +30,10 @@ WebApp.connectHandlers.use("/upload", (req, res, next) => {
     try {
 
     } catch (err) {
+      console.error("Upload error:", err);
 
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Upload failed", details: err }));
     }
   });
 });
