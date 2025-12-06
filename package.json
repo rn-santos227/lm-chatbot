@@ -8,9 +8,12 @@
     "visualize": "meteor --production --extra-packages bundle-visualizer"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.946.0",
+    "@aws-sdk/s3-request-presigner": "^3.946.0",
     "@babel/runtime": "^7.23.5",
     "@swc/helpers": "^0.5.17",
     "meteor-node-stubs": "^1.2.12",
+    "node-fetch": "^3.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
@@ -18,7 +21,7 @@
     "@tailwindcss/forms": "^0.5.10",
     "@types/meteor": "^2.9.10",
     "@types/mocha": "^8.2.3",
-    "@types/node": "^22.10.6",
+    "@types/node": "^22.19.1",
     "@types/react": "^18.2.5",
     "@types/react-dom": "^18.2.4",
     "autoprefixer": "^10.4.22",
