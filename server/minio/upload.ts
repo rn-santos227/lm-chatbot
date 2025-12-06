@@ -9,5 +9,14 @@ import { minioClient } from "./client"
 const minio = Meteor.settings.minio;
 
 WebApp.connectHandlers.use("/upload", (req, res, next) => {
+  if (req.method !== "POST") return next();
 
+  const originalName = req.headers["x-file-name"] as string;
+  const contentType = req.headers["x-file-type"] as string;
+
+  if (!originalName || !contentType) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: "Missing headers" }));
+    return;
+  }
 });
