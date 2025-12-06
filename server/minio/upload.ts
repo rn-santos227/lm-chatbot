@@ -19,4 +19,9 @@ WebApp.connectHandlers.use("/upload", (req, res, next) => {
     res.end(JSON.stringify({ error: "Missing headers" }));
     return;
   }
+
+  const fileName = `${Random.id()}-${originalName}`;
+  const bucket = minio.bucket;
+  const chunks: Uint8Array[] = [];
+  req.on("data", (chunk) => chunks.push(chunk));
 });
