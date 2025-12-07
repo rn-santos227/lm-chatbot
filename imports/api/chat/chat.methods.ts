@@ -42,7 +42,6 @@ Meteor.methods({
 
     Chats.remove(threadId);
     Messages.remove({ threadId });
-
-    Meteor.call("messages.deleteByThread", threadId);
+    return true;
   }
 });
