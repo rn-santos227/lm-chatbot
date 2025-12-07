@@ -9,13 +9,13 @@ interface NameModalProps {
   onSave: () => void;
 }
 
-export const NameModal: React.FC<NameModalProps> = ({
+const NameModal = ({
   isOpen,
   pendingName,
   onChangeName,
   onClose,
   onSave,
-}) => {
+}: NameModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -25,17 +25,24 @@ export const NameModal: React.FC<NameModalProps> = ({
         <p className="name-modal-description">
           Please tell us your name so we can personalize your conversations.
         </p>
+
         <input
           value={pendingName}
           onChange={(e) => onChangeName(e.target.value)}
           className="name-modal-input"
           placeholder="Enter your name"
         />
+
         <div className="name-modal-actions">
           <button className="name-modal-cancel" onClick={onClose}>
             Close
           </button>
-          <button className="name-modal-save" onClick={onSave} disabled={!pendingName.trim()}>
+
+          <button
+            className="name-modal-save"
+            onClick={onSave}
+            disabled={!pendingName.trim()}
+          >
             Save Name
           </button>
         </div>
@@ -43,3 +50,5 @@ export const NameModal: React.FC<NameModalProps> = ({
     </div>
   );
 };
+
+export default NameModal;

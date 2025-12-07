@@ -9,13 +9,13 @@ interface NewChatModalProps {
   onCreate: () => void;
 }
 
-export const NewChatModal: React.FC<NewChatModalProps> = ({
+const NewChatModal = ({
   isOpen,
   chatTitle,
   onChangeTitle,
   onClose,
   onCreate,
-}) => {
+}: NewChatModalProps) => {
   if (!isOpen) return null;
 
   const canCreate = Boolean(chatTitle.trim());
@@ -27,17 +27,24 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({
         <p className="new-chat-modal-description">
           Give this conversation a name so you can quickly find it later.
         </p>
+
         <input
           value={chatTitle}
           onChange={(e) => onChangeTitle(e.target.value)}
           className="new-chat-modal-input"
           placeholder="e.g. Product questions"
         />
+
         <div className="new-chat-modal-actions">
           <button className="new-chat-modal-cancel" onClick={onClose}>
             Cancel
           </button>
-          <button className="new-chat-modal-create" onClick={onCreate} disabled={!canCreate}>
+
+          <button
+            className="new-chat-modal-create"
+            onClick={onCreate}
+            disabled={!canCreate}
+          >
             Create chat
           </button>
         </div>
@@ -45,3 +52,5 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({
     </div>
   );
 };
+
+export default NewChatModal;

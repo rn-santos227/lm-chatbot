@@ -12,16 +12,19 @@ interface MainLayoutProps {
 
 const formattedTimestamp = (timestamp: number) => {
   const date = new Date(timestamp);
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
-export const MainLayout: React.FC<MainLayoutProps> = ({
+const MainLayout = ({
   userName,
   activeChat,
   messageInput,
   onMessageChange,
   onSendMessage,
-}) => {
+}: MainLayoutProps) => {
   const disableSend = !messageInput.trim() || !activeChat;
 
   return (
@@ -31,6 +34,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           <p className="main-subtitle">{activeChat?.title || "No chat selected"}</p>
           <h1 className="main-title">Assistant Chat</h1>
         </div>
+
         <div className="main-user">
           <p className="main-user-label">User</p>
           <p className="main-user-name">{userName || "Unnamed"}</p>
@@ -38,22 +42,33 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       </header>
 
       <section className="main-messages">
-        {activeChat?.messages.map((message: typeof activeChat.messages[number]) => (
+        {activeChat?.messages?.map((message: typeof activeChat.messages[number]) => (
           <div
             key={message.id}
-            className={`message-row ${message.sender === "user" ? "message-row--user" : "message-row--assistant"}`}
+            className={`message-row ${
+              message.sender === "user"
+                ? "message-row--user"
+                : "message-row--assistant"
+            }`}
           >
             <div
               className={`message-card ${
-                message.sender === "user" ? "message-card--user" : "message-card--assistant"
+                message.sender === "user"
+                  ? "message-card--user"
+                  : "message-card--assistant"
               }`}
             >
               <div className="message-meta">
                 <span className="message-author">
-                  {message.sender === "user" ? userName || "User" : "Assistant"}
+                  {message.sender === "user"
+                    ? userName || "User"
+                    : "Assistant"}
                 </span>
-                <span className="message-timestamp">{formattedTimestamp(message.timestamp)}</span>
+                <span className="message-timestamp">
+                  {formattedTimestamp(message.timestamp)}
+                </span>
               </div>
+
               <p className="message-body">{message.content}</p>
             </div>
           </div>
@@ -68,6 +83,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             className="main-textarea"
             placeholder="Send a message to the assistant..."
           />
+
           <button
             onClick={onSendMessage}
             className="main-send"
@@ -80,3 +96,5 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     </main>
   );
 };
+
+export default MainLayout;
