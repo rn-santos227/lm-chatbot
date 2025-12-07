@@ -5,7 +5,7 @@ interface NewChatModalProps {
   chatTitle: string;
   onChangeTitle: (value: string) => void;
   onClose: () => void;
-  onCreate: () => void;
+  onCreate: (title: string) => void;
 }
 
 export const NewChatModal: React.FC<NewChatModalProps> = ({
@@ -45,7 +45,7 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({
 
           <button
             className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400"
-            onClick={onCreate}
+            onClick={() => onCreate(chatTitle.trim())}
             disabled={!canCreate}
           >
             Create chat

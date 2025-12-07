@@ -87,7 +87,7 @@ export const formatChatHtml = (content: string): { __html: string } => {
       flushTable();
       flushList();
       const level = headingMatch[1].length;
-      htmlParts.push(`<h${level}>${formatInline(headingMatch[2].trim())}</h${level}><br />`);
+      htmlParts.push(`<h${level}>${formatInline(headingMatch[2].trim())}</h${level}>`);
       continue;
     }
 

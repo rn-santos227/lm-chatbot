@@ -82,8 +82,12 @@ export const App = () => {
     setShowNewChatModal(true);
   };
 
-  const handleCreateChat = () => {
-    handleNewChat();
+  const handleCreateChat = (title: string) => {
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) return;
+
+    handleNewChat(trimmedTitle);
     setShowNewChatModal(false);
     setPendingChatTitle("");
   };

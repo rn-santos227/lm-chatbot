@@ -94,12 +94,12 @@ export const useChatSessions = (userName: string) => {
     [activeChatId, chats]
   );
 
-  const handleNewChat = async () => {
-    const title = `Chat ${chats.length + 1}`;
+  const handleNewChat = async (title?: string) => {
+    const chatTitle = title?.trim() || `Chat ${chats.length + 1}`;
     let threadId: string | undefined;
 
     try {
-      threadId = await Meteor.callAsync("chats.create", title);
+      threadId = await Meteor.callAsync("chats.create", chatTitle);
     } catch (error) {
       console.error("Unable to create chat thread", error);
     }
@@ -107,7 +107,7 @@ export const useChatSessions = (userName: string) => {
     const newChat: ChatSession = {
       id: createId(),
       threadId,
-      title,
+      title: chatTitle,
       messages: [
         {
           id: createId(),
