@@ -1,7 +1,13 @@
 import { Meteor } from 'meteor/meteor';
 
-import "./minio/client"
-import "./minio/upload"
+import "../imports/api/chats/chat.publications";
+import "../imports/api/chats/chat.methods";
+
+import "../imports/api/messages/message.publications";
+import "../imports/api/messages/message.methods";
+
+import "./minio/client";
+import "./minio/upload";
 
 Meteor.startup(async () => {
   const minio = Meteor.settings.minio;
