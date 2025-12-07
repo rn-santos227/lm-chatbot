@@ -1,5 +1,6 @@
 import { Meteor } from "meteor/meteor";
-import { Chats } from "./chat.collection";
+import { Chats } from "./chat.collection"
+import { Messages } from "../messages/message.collection";
 
 Meteor.methods({
   "chats.create"(title: string): string {
@@ -40,6 +41,8 @@ Meteor.methods({
     }
 
     Chats.remove(threadId);
+    Messages.remove({ threadId });
+
     Meteor.call("messages.deleteByThread", threadId);
   }
 });
