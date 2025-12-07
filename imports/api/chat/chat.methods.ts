@@ -1,6 +1,5 @@
 import { Meteor } from "meteor/meteor";
 import { Chats } from "./chat.collection";
-import { MessageDoc } from "../messages/message.type";
 
 Meteor.methods({
   "chats.create"(title: string): string {
