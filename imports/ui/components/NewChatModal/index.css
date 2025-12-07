@@ -1,0 +1,31 @@
+.new-chat-modal-overlay {
+  @apply fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50;
+}
+
+.new-chat-modal-card {
+  @apply bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg space-y-4;
+}
+
+.new-chat-modal-title {
+  @apply text-2xl font-semibold text-gray-900;
+}
+
+.new-chat-modal-description {
+  @apply text-sm text-gray-600;
+}
+
+.new-chat-modal-input {
+  @apply w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.new-chat-modal-actions {
+  @apply flex justify-end gap-3 pt-2;
+}
+
+.new-chat-modal-cancel {
+  @apply px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition;
+}
+
+.new-chat-modal-create {
+  @apply px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition;
+}

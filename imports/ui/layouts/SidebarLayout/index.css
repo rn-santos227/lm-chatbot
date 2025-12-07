@@ -1,0 +1,67 @@
+.sidebar {
+  @apply w-72 bg-gray-900 text-white flex flex-col;
+}
+
+.sidebar-header {
+  @apply p-4 border-b border-gray-800 flex items-center justify-between;
+}
+
+.sidebar-subtitle {
+  @apply text-xs uppercase text-gray-400;
+}
+
+.sidebar-username {
+  @apply text-lg font-semibold;
+}
+
+.sidebar-edit {
+  @apply text-sm text-blue-300 hover:text-blue-200;
+}
+
+.sidebar-action {
+  @apply p-4 border-b border-gray-800;
+}
+
+.sidebar-new-chat {
+  @apply w-full bg-white text-gray-900 font-semibold py-2 rounded-lg shadow hover:-translate-y-0.5 transition transform;
+}
+
+.sidebar-list {
+  @apply flex-1 overflow-y-auto;
+}
+
+.sidebar-section-title {
+  @apply px-4 pb-2 text-xs uppercase text-gray-400;
+}
+
+.sidebar-items {
+  @apply space-y-1 px-2;
+}
+
+.sidebar-item {
+  @apply w-full text-left px-3 py-2 rounded-lg transition flex items-center gap-2 hover:bg-gray-800;
+}
+
+.sidebar-item--active {
+  @apply bg-gray-800;
+}
+
+.sidebar-status {
+  @apply inline-block h-2 w-2 rounded-full bg-green-400;
+}
+
+.sidebar-item-text {
+  @apply flex-1 min-w-0;
+}
+
+.sidebar-item-title {
+  @apply font-semibold truncate;
+}
+
+.sidebar-item-preview {
+  @apply text-xs text-gray-400 truncate;
+}
+
+.sidebar-footer {
+  @apply p-4 border-t border-gray-800 text-xs text-gray-400;
+}
