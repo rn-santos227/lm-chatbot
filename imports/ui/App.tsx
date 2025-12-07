@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { SidebarLayout } from "./layouts/SidebarLayout";
+
+import { SideBarLayout } from "./layouts/SideBarLayout";
 import { NameModal } from "./components/NameModal";
 import { NewChatModal } from "./components/NewChatModal";
 import { MainLayout } from "./layouts/MainLayout";
@@ -55,7 +56,7 @@ export const App = () => {
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
       <div className="flex h-screen max-h-screen overflow-hidden">
-        <SidebarLayout
+        <SideBarLayout
           userName={userName}
           chats={chats}
           activeChatId={activeChatId}
