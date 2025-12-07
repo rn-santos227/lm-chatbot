@@ -7,5 +7,18 @@ Meteor.methods({
     if (!threadId || typeof threadId !== "string") {
       throw new Meteor.Error("invalid-thread", "threadId must be a string");
     }
+
+    if (!text || typeof text !== "string") {
+      throw new Meteor.Error("invalid-text", "Message text must be a string");
+    }
+
+    const msg: MessageDoc = {
+      threadId,
+      sender: "user",
+      content: text,
+      createdAt: new Date(),
+    };
+
+    return Messages.insert(msg);
   },
 });
