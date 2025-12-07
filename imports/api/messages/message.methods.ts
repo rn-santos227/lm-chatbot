@@ -21,4 +21,23 @@ Meteor.methods({
 
     return Messages.insert(msg);
   },
+
+  "messages.assistantSend"(threadId: string, content: string, raw?: string): string {
+    if (!threadId || typeof threadId !== "string") {
+      throw new Meteor.Error("invalid-thread", "threadId must be a string");
+    }
+    if (!content || typeof content !== "string") {
+      throw new Meteor.Error("invalid-content", "Assistant content must be a string");
+    }
+
+    const msg: MessageDoc = {
+      threadId,
+      sender: "assistant",
+      content,
+      raw,
+      createdAt: new Date(),
+    };
+
+    return Messages.insert(msg);
+  },
 });
