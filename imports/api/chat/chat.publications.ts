@@ -8,5 +8,9 @@ Meteor.publish("chats.all", function () {
 });
 
 Meteor.publish("chats.single", function (threadId: string) {
+  if (!threadId || typeof threadId !== "string") {
+    return this.ready();
+  }
 
+  return Chats.find({ _id: threadId });
 });
