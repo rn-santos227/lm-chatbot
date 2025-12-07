@@ -2,8 +2,12 @@ import { Meteor } from "meteor/meteor";
 import { Messages } from "./message.collection";
 import type { MessageDoc } from "./message.types";
 
+import { Chats } from "../chats/chat.collection";
+import type { LMMessage, LMChatResponse } from "../lmstudio/lmstudio.types";
+import { lmChatRequest } from "../lmstudio/lmstudio.service";
+
 Meteor.methods({
-  "messages.userSend"(threadId: string, text: string): string {
+  async "messages.userSend"(threadId: string, text: string) {
     if (!threadId || typeof threadId !== "string") {
       throw new Meteor.Error("invalid-thread", "threadId must be a string");
     }
@@ -12,17 +16,59 @@ Meteor.methods({
       throw new Meteor.Error("invalid-text", "Message text must be a string");
     }
 
-    const msg: MessageDoc = {
+    const now = new Date();
+    const chat = Chats.findOne(threadId);
+    if (!chat) {
+      throw new Meteor.Error("not-found", "Chat thread not found");
+    }
+
+    const userMessageId = Messages.insert({
       threadId,
       sender: "user",
       content: text,
-      createdAt: new Date(),
-    };
+      createdAt: now,
+    });
 
-    return Messages.insert(msg);
+    const historyDocs = Messages.find(
+      { threadId },
+      { sort: { createdAt: 1 } }
+    ).fetch();
+
+    const history: LMMessage[] = historyDocs.map((m) => ({
+      role: m.sender === "assistant" ? "assistant" : "user",
+      content: m.content,
+    }));
+
+    const reply = await lmChatRequest(
+      history,
+      chat.model,
+      chat.temperature
+    );
+
+    const assistantMessageId = Messages.insert({
+      threadId,
+      sender: "assistant",
+      content: reply.content,
+      raw: reply.raw,
+      createdAt: new Date(),
+    });
+
+    Chats.update(threadId, {
+      $set: { updatedAt: new Date() },
+    });
+
+    return {
+      userMessageId,
+      assistantMessageId,
+      assistantText: reply.content,
+    };
   },
 
-  "messages.assistantSend"(threadId: string, content: string, raw?: string): string {
+  "messages.assistantSend"(
+    threadId: string,
+    content: string,
+    raw?: LMChatResponse
+  ): string {
     if (!threadId || typeof threadId !== "string") {
       throw new Meteor.Error("invalid-thread", "threadId must be a string");
     }
