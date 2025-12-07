@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { Meteor } from "meteor/meteor";
 
 import { SideBarLayout } from "./layouts/SideBarLayout";
 import { NameModal } from "./components/NameModal";
 import { NewChatModal } from "./components/NewChatModal";
 import { MainLayout } from "./layouts/MainLayout";
 import { useChatSessions } from "./hooks/useChatSessions";
+import { Toast } from "./components/Toast";
 
 export const App = () => {
   const [userName, setUserName] = useState("");
@@ -13,9 +15,20 @@ export const App = () => {
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [pendingChatTitle, setPendingChatTitle] = useState("");
   const [messageInput, setMessageInput] = useState("");
+  const [toast, setToast] = useState<{
+    message: string;
+    type?: "success" | "error" | "info";
+  } | null>(null);
 
-  const { chats, activeChat, activeChatId, setActiveChatId, handleNewChat, sendMessage } =
-    useChatSessions(userName);
+  const {
+    chats,
+    activeChat,
+    activeChatId,
+    isProcessing,
+    setActiveChatId,
+    handleNewChat,
+    sendMessage,
+  } = useChatSessions(userName);
 
   useEffect(() => {
     const storedName = localStorage.getItem("chat-username") || "";
@@ -41,6 +54,31 @@ export const App = () => {
     sendMessage(messageInput);
     setMessageInput("");
   };
+
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const ok = await Meteor.callAsync("lmstudio.health");
+        setToast({
+          message: ok
+            ? "Connected to LM Studio"
+            : "LM Studio unreachable. Messages may fail.",
+          type: ok ? "success" : "error",
+        });
+      } catch (error) {
+        console.error("LM Studio health check failed", error);
+        setToast({
+          message: "Unable to verify LM Studio connection.",
+          type: "error",
+        });
+      }
+    };
+
+    void checkConnection();
+
+    const interval = setInterval(checkConnection, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleOpenNewChatModal = () => {
     setPendingChatTitle(`Chat ${chats.length + 1}`);
@@ -71,6 +109,7 @@ export const App = () => {
           messageInput={messageInput}
           onMessageChange={setMessageInput}
           onSendMessage={handleSendMessage}
+          isProcessing={isProcessing}
         />
       </div>
 
@@ -88,6 +127,14 @@ export const App = () => {
         onClose={() => setShowNewChatModal(false)}
         onCreate={handleCreateChat}
       />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

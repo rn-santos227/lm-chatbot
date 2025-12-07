@@ -6,6 +6,8 @@ import "../imports/api/chats/chat.methods";
 import "../imports/api/messages/message.publications";
 import "../imports/api/messages/message.methods";
 
+import "../imports/api/lmstudio/lmstudio.methods";
+
 import "./minio/client";
 import "./minio/upload";
 

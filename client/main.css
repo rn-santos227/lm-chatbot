@@ -67,6 +67,52 @@ body {
   animation: slide-up 220ms ease;
 }
 
+
+.chat-content {
+  @apply text-sm leading-relaxed text-gray-900;
+}
+
+.chat-content p {
+  @apply mb-2;
+}
+
+.chat-content strong {
+  @apply font-semibold;
+}
+
+.chat-content em {
+  @apply italic;
+}
+
+.chat-content code {
+  @apply font-mono text-xs bg-gray-200 px-1 py-0.5 rounded;
+}
+
+.chat-content pre {
+  @apply overflow-x-auto bg-gray-900 text-gray-100 p-3 rounded mb-3;
+}
+
+.chat-content ul {
+  @apply list-disc list-inside mb-2;
+}
+
+.chat-content ol {
+  @apply list-decimal list-inside mb-2;
+}
+
+.chat-content table {
+  @apply w-full text-left border-collapse mb-3;
+}
+
+.chat-content th,
+.chat-content td {
+  @apply border border-gray-300 px-2 py-1 align-top;
+}
+
+.chat-content thead {
+  @apply bg-gray-100 font-semibold;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

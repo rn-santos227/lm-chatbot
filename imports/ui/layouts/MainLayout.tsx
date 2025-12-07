@@ -1,5 +1,6 @@
 import React from "react";
 import { ChatSession } from "../types/session";
+import { formatChatHtml } from "../utils/chatFormatter";
 
 interface MainLayoutProps {
   userName: string;
@@ -7,6 +8,7 @@ interface MainLayoutProps {
   messageInput: string;
   onMessageChange: (value: string) => void;
   onSendMessage: () => void;
+  isProcessing: boolean;
 }
 
 const formattedTimestamp = (timestamp: number) => {
@@ -20,12 +22,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   messageInput,
   onMessageChange,
   onSendMessage,
+  isProcessing,
 }) => {
   const disableSend = !messageInput.trim() || !activeChat;
 
   return (
     <main className="flex-1 flex flex-col bg-gray-100 text-gray-900 min-h-screen">
-      {/* HEADER */}
       <header className="p-4 border-b bg-white flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-500">
@@ -65,10 +67,22 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 </span>
               </div>
 
-              <p className="whitespace-pre-wrap">{message.content}</p>
+              <div
+                className="chat-content whitespace-pre-wrap"
+                dangerouslySetInnerHTML={formatChatHtml(message.content)}
+              />
             </div>
           </div>
         ))}
+
+        {isProcessing && (
+          <div className="flex justify-start">
+            <div className="max-w-3xl rounded-2xl px-4 py-3 shadow text-sm leading-relaxed border bg-white text-gray-900 border-gray-200 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-blue-600 animate-ping" aria-hidden />
+              <span>LM Studio is processing your request...</span>
+            </div>
+          </div>
+        )}
       </section>
 
       <footer className="bg-white border-t p-4">

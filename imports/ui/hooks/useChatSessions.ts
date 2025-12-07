@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Meteor } from "meteor/meteor";
 
 import { ChatSession, Message } from "../types/session";
 
@@ -43,6 +44,7 @@ const loadChats = (username: string): ChatSession[] => {
 export const useChatSessions = (userName: string) => {
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (!userName) {
@@ -52,6 +54,34 @@ export const useChatSessions = (userName: string) => {
     const loaded = loadChats(userName);
     setChats(loaded);
     setActiveChatId(loaded[0]?.id ?? null);
+
+
+    const ensureThreads = async () => {
+      const withThreads: ChatSession[] = [];
+
+      for (const chat of loaded) {
+        if (chat.threadId) {
+          withThreads.push(chat);
+          continue;
+        }
+
+        try {
+          const threadId = (await Meteor.callAsync(
+            "chats.create",
+            chat.title || "Conversation"
+          )) as string;
+
+          withThreads.push({ ...chat, threadId });
+        } catch (error) {
+          console.error("Failed to create LM Studio thread", error);
+          withThreads.push(chat);
+        }
+      }
+
+      setChats(withThreads);
+    };
+
+    void ensureThreads();
   }, [userName]);
 
   useEffect(() => {
@@ -64,10 +94,20 @@ export const useChatSessions = (userName: string) => {
     [activeChatId, chats]
   );
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
+    const title = `Chat ${chats.length + 1}`;
+    let threadId: string | undefined;
+
+    try {
+      threadId = await Meteor.callAsync("chats.create", title);
+    } catch (error) {
+      console.error("Unable to create chat thread", error);
+    }
+
     const newChat: ChatSession = {
       id: createId(),
-      title: `Chat ${chats.length + 1}`,
+      threadId,
+      title,
       messages: [
         {
           id: createId(),
@@ -82,8 +122,24 @@ export const useChatSessions = (userName: string) => {
     setActiveChatId(newChat.id);
   };
 
-  const sendMessage = (content: string) => {
+  const ensureThreadId = async (chat: ChatSession) => {
+    if (chat.threadId) return chat.threadId;
+
+    const threadId = await Meteor.callAsync(
+      "chats.create",
+      chat.title || "Conversation"
+    );
+
+    setChats((current) =>
+      current.map((c) => (c.id === chat.id ? { ...c, threadId } : c))
+    );
+
+    return threadId;
+  };
+
+  const sendMessage = async (content: string) => {
     if (!content.trim() || !activeChat) return;
+    setIsProcessing(true);
 
     const userMessage: Message = {
       id: createId(),
@@ -91,36 +147,70 @@ export const useChatSessions = (userName: string) => {
       content: content.trim(),
       timestamp: Date.now(),
     };
-
-    const updatedChats = chats.map((chat) => {
-      if (chat.id !== activeChat.id) return chat;
-
-      const updatedMessages = [...chat.messages, userMessage];
-      return { ...chat, messages: updatedMessages, title: chat.title || "Conversation" };
-    });
-
-    setChats(updatedChats);
-
-    const assistantMessage: Message = {
-      id: createId(),
-      sender: "assistant",
-      content: assistantReply(userName, userMessage.content),
-      timestamp: Date.now(),
-    };
+    const threadId = await ensureThreadId(activeChat);
 
     setChats((current) =>
       current.map((chat) =>
         chat.id === activeChat.id
-          ? { ...chat, messages: [...chat.messages, assistantMessage] }
+          ? {
+              ...chat,
+              messages: [...chat.messages, userMessage],
+              title: chat.title || "Conversation",
+            }
           : chat
       )
     );
+
+    try {
+      const response = await Meteor.callAsync(
+        "messages.userSend",
+        threadId,
+        userMessage.content
+      );
+
+      const assistantMessage: Message = {
+        id: response?.assistantMessageId || createId(),
+        sender: "assistant",
+        content: response?.assistantText ??
+          assistantReply(userName, userMessage.content),
+        timestamp: Date.now(),
+      };
+
+      setChats((current) =>
+        current.map((chat) =>
+          chat.id === activeChat.id
+            ? { ...chat, messages: [...chat.messages, assistantMessage] }
+            : chat
+        )
+      );
+    } catch (error) {
+      console.error("LM Studio reply failed", error);
+
+      const fallbackMessage: Message = {
+        id: createId(),
+        sender: "assistant",
+        content:
+          "I couldn't get a response from LM Studio right now. Please try again shortly.",
+        timestamp: Date.now(),
+      };
+
+      setChats((current) =>
+        current.map((chat) =>
+          chat.id === activeChat.id
+            ? { ...chat, messages: [...chat.messages, fallbackMessage] }
+            : chat
+        )
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return {
     chats,
     activeChat,
     activeChatId,
+    isProcessing,
     setActiveChatId,
     handleNewChat,
     sendMessage,
