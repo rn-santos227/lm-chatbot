@@ -17,22 +17,22 @@ Meteor.methods({
     }
 
     const now = new Date();
-    const chat = Chats.findOne(threadId);
+    const chat = await Chats.findOneAsync(threadId);
     if (!chat) {
       throw new Meteor.Error("not-found", "Chat thread not found");
     }
 
-    const userMessageId = Messages.insert({
+    const userMessageId = await Messages.insertAsync({
       threadId,
       sender: "user",
       content: text,
       createdAt: now,
     });
 
-    const historyDocs = Messages.find(
+    const historyDocs = await Messages.find(
       { threadId },
       { sort: { createdAt: 1 } }
-    ).fetch();
+    ).fetchAsync();
 
     const history: LMMessage[] = historyDocs.map((m) => ({
       role: m.sender === "assistant" ? "assistant" : "user",
@@ -45,7 +45,7 @@ Meteor.methods({
       chat.temperature
     );
 
-    const assistantMessageId = Messages.insert({
+    const assistantMessageId = await Messages.insertAsync({
       threadId,
       sender: "assistant",
       content: reply.content,
@@ -53,7 +53,7 @@ Meteor.methods({
       createdAt: new Date(),
     });
 
-    Chats.update(threadId, {
+    await Chats.updateAsync(threadId, {
       $set: { updatedAt: new Date() },
     });
 
@@ -64,11 +64,11 @@ Meteor.methods({
     };
   },
 
-  "messages.assistantSend"(
+  async "messages.assistantSend"(
     threadId: string,
     content: string,
     raw?: LMChatResponse
-  ): string {
+  ): Promise<string> {
     if (!threadId || typeof threadId !== "string") {
       throw new Meteor.Error("invalid-thread", "threadId must be a string");
     }
@@ -84,14 +84,14 @@ Meteor.methods({
       createdAt: new Date(),
     };
 
-    return Messages.insert(msg);
+    return Messages.insertAsync(msg);
   },
 
-  "messages.deleteByThread"(threadId: string) {
+  async "messages.deleteByThread"(threadId: string) {
     if (!threadId || typeof threadId !== "string") {
       throw new Meteor.Error("invalid-thread", "Thread ID required");
     }
 
-    return Messages.remove({ threadId });
+    return Messages.removeAsync({ threadId });
   },
 });

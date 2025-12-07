@@ -75,9 +75,6 @@ export const App = () => {
     };
 
     void checkConnection();
-
-    const interval = setInterval(checkConnection, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleOpenNewChatModal = () => {

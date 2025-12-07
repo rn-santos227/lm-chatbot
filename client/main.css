@@ -69,7 +69,7 @@ body {
 
 
 .chat-content {
-  @apply text-sm leading-relaxed text-gray-900;
+  @apply text-sm leading-relaxed;
 }
 
 .chat-content p {

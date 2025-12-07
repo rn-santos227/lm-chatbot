@@ -3,7 +3,7 @@ import { Chats } from "./chat.collection"
 import { Messages } from "../messages/message.collection";
 
 Meteor.methods({
-  "chats.create"(title: string): string {
+  async "chats.create"(title: string): Promise<string> {
     if (!title || typeof title !== "string") {
       throw new Meteor.Error("invalid-title", "Chat title must be a non-empty string.");
     }
@@ -11,7 +11,7 @@ Meteor.methods({
     const cleanedTitle = title.trim() || "New Chat";
     const now = new Date();
 
-    const threadId = Chats.insert({
+    const threadId = await Chats.insertAsync({
       title: cleanedTitle,
       createdAt: now,
       updatedAt: now,
@@ -22,12 +22,12 @@ Meteor.methods({
     return threadId;
   },
 
-  "chats.rename"(threadId: string, title: string) {
+  async "chats.rename"(threadId: string, title: string) {
     if (!threadId || typeof threadId !== "string") {
       throw new Meteor.Error("invalid-thread", "Thread ID must be a string.");
     }
 
-    Chats.update(threadId, {
+    await Chats.updateAsync(threadId, {
       $set: {
         title,
         updatedAt: new Date(),
@@ -35,13 +35,13 @@ Meteor.methods({
     });
   },
 
-  "chats.delete"(threadId: string) {
+  async "chats.delete"(threadId: string) {
     if (!threadId || typeof threadId !== "string") {
       throw new Meteor.Error("invalid-thread", "Thread ID must be a string.");
     }
 
-    Chats.remove(threadId);
-    Messages.remove({ threadId });
+    await Chats.removeAsync(threadId);
+    await Messages.removeAsync({ threadId });
     return true;
   }
 });
