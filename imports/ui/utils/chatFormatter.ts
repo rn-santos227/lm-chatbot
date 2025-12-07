@@ -8,8 +8,11 @@ const escapeHtml = (value: string) =>
 
 const formatInline = (value: string) => {
   let formatted = escapeHtml(value);
+
+  formatted = formatted.replace(/`([^`]+)`/g, "<code>$1</code>");
   formatted = formatted.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   formatted = formatted.replace(/\*(.+?)\*/g, "<em>$1</em>");
+
   return formatted;
 };
 
@@ -38,6 +41,9 @@ export const formatChatHtml = (content: string): { __html: string } => {
   const lines = content.split(/\r?\n/);
   const htmlParts: string[] = [];
   let tableBuffer: string[][] = [];
+  let codeBuffer: string[] = [];
+  let listBuffer: string[] = [];
+  let isInCodeBlock = false;
 
   const flushTable = () => {
     if (!tableBuffer.length) return;
@@ -45,25 +51,78 @@ export const formatChatHtml = (content: string): { __html: string } => {
     tableBuffer = [];
   };
 
+  const flushList = () => {
+    if (!listBuffer.length) return;
+    htmlParts.push(`<ul>${listBuffer.map((item) => `<li>${formatInline(item)}</li>`).join("")}</ul>`);
+    listBuffer = [];
+  };
+
+  const flushCode = () => {
+    if (!codeBuffer.length) return;
+    htmlParts.push(`<pre><code>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`);
+    codeBuffer = [];
+  };
+
   for (const line of lines) {
+    const codeFenceMatch = line.match(/^```(.*)$/);
+
+    if (codeFenceMatch) {
+      if (isInCodeBlock) {
+        flushCode();
+      } else {
+        flushTable();
+      }
+
+      isInCodeBlock = !isInCodeBlock;
+      continue;
+    }
+
+    if (isInCodeBlock) {
+      codeBuffer.push(line);
+      continue;
+    }
+
+    const headingMatch = line.match(/^\s*(#{1,6})\s+(.*)$/);
+    if (headingMatch) {
+      flushTable();
+      flushList();
+      const level = headingMatch[1].length;
+      htmlParts.push(`<h${level}>${formatInline(headingMatch[2].trim())}</h${level}><br />`);
+      continue;
+    }
+
+    const listMatch = line.match(/^\s*-\s+(.*)$/);
+    if (listMatch) {
+      flushTable();
+      listBuffer.push(listMatch[1]);
+      continue;
+    }
+
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) {
+      flushList();
+      htmlParts.push("<p>\u00a0</p>");
+      continue;
+    }
+
     const isTableRow = line.includes("|");
 
     if (isTableRow) {
+      flushList();
       tableBuffer.push(line.split("|").filter(Boolean));
       continue;
     }
 
     flushTable();
-
-    if (!line.trim()) {
-      htmlParts.push("<p>\u00a0</p>");
-      continue;
-    }
+    flushList();
 
     htmlParts.push(`<p>${formatInline(line)}</p>`);
   }
 
+  flushList();
   flushTable();
+  flushCode();
 
   return { __html: htmlParts.join("") };
 };

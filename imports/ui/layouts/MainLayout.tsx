@@ -26,6 +26,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 }) => {
   const disableSend = !messageInput.trim() || !activeChat;
 
+  const handleKeyDown = (
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      if (!disableSend) {
+        onSendMessage();
+      }
+    }
+  };
+
   return (
     <main className="flex-1 flex flex-col bg-gray-100 text-gray-900 min-h-screen">
       <header className="p-4 border-b bg-white flex items-center justify-between">
@@ -89,6 +100,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         <div className="flex gap-3">
           <textarea
             value={messageInput}
+            onKeyDown={handleKeyDown}
             onChange={(e) => onMessageChange(e.target.value)}
             className="flex-1 h-24 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Send a message to the assistant..."

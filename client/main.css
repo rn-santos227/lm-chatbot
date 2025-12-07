@@ -85,7 +85,7 @@ body {
 }
 
 .chat-content code {
-  @apply font-mono text-xs bg-gray-200 px-1 py-0.5 rounded;
+  @apply font-mono text-xs px-1 py-0.5 rounded;
 }
 
 .chat-content pre {
