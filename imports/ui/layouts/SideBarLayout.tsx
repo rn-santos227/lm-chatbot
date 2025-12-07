@@ -8,6 +8,7 @@ interface SideBarProps {
   onSelectChat: (id: string) => void;
   onNewChat: () => void;
   onEditName: () => void;
+  onDeleteChat: (id: string) => void;
 }
 
 export const SideBarLayout: React.FC<SideBarProps> = ({
@@ -17,6 +18,7 @@ export const SideBarLayout: React.FC<SideBarProps> = ({
   onSelectChat,
   onNewChat,
   onEditName,
+  onDeleteChat,
 }) => (
   <aside className="w-72 bg-gray-900 text-white flex flex-col">
     <div className="p-4 border-b border-gray-800 flex items-center justify-between">
@@ -48,15 +50,22 @@ export const SideBarLayout: React.FC<SideBarProps> = ({
       <ul className="space-y-1 px-2">
         {chats.map((chat) => (
           <li key={chat.id}>
-            <button
-              onClick={() => onSelectChat(chat.id)}
-              className={`w-full text-left px-3 py-2 rounded-lg transition flex items-center gap-2 hover:bg-gray-800 ${
+            <div
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectChat(chat.id);
+                }
+              }}
+              className={`w-full text-left px-3 py-2 rounded-lg transition flex items-center gap-2 hover:bg-gray-800 cursor-pointer ${
                 activeChatId === chat.id ? "bg-gray-800" : ""
               }`}
             >
               <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
 
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-left">
                 <p className="font-semibold truncate">{chat.title}</p>
 
                 <p className="text-xs text-gray-400 truncate">
@@ -64,7 +73,29 @@ export const SideBarLayout: React.FC<SideBarProps> = ({
                     "New conversation"}
                 </p>
               </div>
-            </button>
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (activeChatId === chat.id) return;
+                  onDeleteChat(chat.id);
+                }}
+                disabled={activeChatId === chat.id}
+                aria-disabled={activeChatId === chat.id}
+                className={`text-xs text-gray-400 hover:text-red-300 transition ${
+                  activeChatId === chat.id
+                    ? "opacity-50 cursor-not-allowed hover:text-gray-400"
+                    : ""
+                }`}
+                aria-label={`Delete ${chat.title}`}
+                title={
+                  activeChatId === chat.id
+                    ? "Cannot delete the active chat"
+                    : `Delete ${chat.title}`
+                }
+              >
+                ✕
+              </button>
+            </div>
           </li>
         ))}
       </ul>

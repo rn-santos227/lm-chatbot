@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { ChatSession } from "../types/session";
 import { formatChatHtml } from "../utils/chatFormatter";
 
@@ -25,6 +25,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   isProcessing,
 }) => {
   const disableSend = !messageInput.trim() || !activeChat;
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLTextAreaElement>
@@ -36,6 +37,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       }
     }
   };
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    }
+  }, [activeChat?.id, activeChat?.messages.length, isProcessing]);
 
   return (
     <main className="flex-1 flex flex-col bg-gray-100 text-gray-900 min-h-screen">
@@ -53,7 +62,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         </div>
       </header>
 
-      <section className="flex-1 overflow-y-auto p-6 space-y-3 bg-gray-50">
+      <section
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-6 space-y-3 bg-gray-50"
+      >
         {activeChat?.messages.map((message: ChatSession['messages'][number]) => (
           <div
             key={message.id}

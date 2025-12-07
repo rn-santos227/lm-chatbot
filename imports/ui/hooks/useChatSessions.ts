@@ -206,6 +206,33 @@ export const useChatSessions = (userName: string) => {
     }
   };
 
+  const removeChat = async (chatId: string) => {
+    if (chatId === activeChatId) {
+      console.warn("Refusing to delete the active chat for safety");
+      return;
+    }
+
+    const chatToDelete = chats.find((chat) => chat.id === chatId);
+
+    setChats((current) => {
+      const updated = current.filter((chat) => chat.id !== chatId);
+
+      if (activeChatId === chatId) {
+        setActiveChatId(updated[0]?.id ?? null);
+      }
+
+      return updated;
+    });
+
+    if (chatToDelete?.threadId) {
+      try {
+        await Meteor.callAsync("chats.delete", chatToDelete.threadId);
+      } catch (error) {
+        console.error("Unable to delete chat thread", error);
+      }
+    }
+  };
+
   return {
     chats,
     activeChat,
@@ -214,5 +241,6 @@ export const useChatSessions = (userName: string) => {
     setActiveChatId,
     handleNewChat,
     sendMessage,
+    removeChat,
   };
 };

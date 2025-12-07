@@ -43,7 +43,19 @@ export const formatChatHtml = (content: string): { __html: string } => {
   let tableBuffer: string[][] = [];
   let codeBuffer: string[] = [];
   let listBuffer: string[] = [];
+  let codeLanguage: string | null = null;
   let isInCodeBlock = false;
+
+  const normalizeCodeLanguage = (lang: string | null) => {
+    if (!lang) return "";
+
+    const normalized = lang.trim().toLowerCase();
+    if (["bash", "shell", "sh", "cmd"].includes(normalized)) {
+      return "language-bash";
+    }
+
+    return normalized ? `language-${normalized}` : "";
+  };
 
   const flushTable = () => {
     if (!tableBuffer.length) return;
@@ -59,8 +71,13 @@ export const formatChatHtml = (content: string): { __html: string } => {
 
   const flushCode = () => {
     if (!codeBuffer.length) return;
-    htmlParts.push(`<pre><code>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`);
+    const className = normalizeCodeLanguage(codeLanguage);
+    const classAttribute = className ? ` class="${className}"` : "";
+    htmlParts.push(
+      `<pre><code${classAttribute}>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`
+    );
     codeBuffer = [];
+    codeLanguage = null;
   };
 
   for (const line of lines) {
@@ -71,6 +88,7 @@ export const formatChatHtml = (content: string): { __html: string } => {
         flushCode();
       } else {
         flushTable();
+        codeLanguage = codeFenceMatch[1] || null;
       }
 
       isInCodeBlock = !isInCodeBlock;

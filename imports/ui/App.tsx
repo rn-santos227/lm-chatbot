@@ -28,6 +28,7 @@ export const App = () => {
     setActiveChatId,
     handleNewChat,
     sendMessage,
+    removeChat,
   } = useChatSessions(userName);
 
   useEffect(() => {
@@ -100,6 +101,7 @@ export const App = () => {
           chats={chats}
           activeChatId={activeChatId}
           onSelectChat={setActiveChatId}
+          onDeleteChat={removeChat}
           onNewChat={handleOpenNewChatModal}
           onEditName={() => setShowNameModal(true)}
         />

@@ -1,5 +1,5 @@
 import { Mongo } from "meteor/mongo";
-import type { ChatThread } from "./chat.type";
+import type { ChatThread } from "./chat.types";
 
 export const Chats = new Mongo.Collection<ChatThread>("chats");
 
