@@ -40,4 +40,12 @@ Meteor.methods({
 
     return Messages.insert(msg);
   },
+
+  "messages.deleteByThread"(threadId: string) {
+    if (!threadId || typeof threadId !== "string") {
+      throw new Meteor.Error("invalid-thread", "Thread ID required");
+    }
+
+    return Messages.remove({ threadId });
+  },
 });
