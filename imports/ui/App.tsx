@@ -25,9 +25,12 @@ export const App = () => {
     activeChat,
     activeChatId,
     isProcessing,
+    isHistoryLoading,
+    canLoadMoreHistory,
     setActiveChatId,
     handleNewChat,
     sendMessage,
+   loadOlderMessages,
     removeChat,
   } = useChatSessions(userName);
 
@@ -113,6 +116,9 @@ export const App = () => {
           onMessageChange={setMessageInput}
           onSendMessage={handleSendMessage}
           isProcessing={isProcessing}
+          isHistoryLoading={isHistoryLoading}
+          canLoadMoreHistory={canLoadMoreHistory}
+          onLoadOlderMessages={loadOlderMessages}
         />
       </div>
 

@@ -4,7 +4,8 @@ export interface ChatThread {
 
   title: string;
   summary?: string;
-
+  memory?: string[];
+  
   model?: string;
   temperature?: number;
 

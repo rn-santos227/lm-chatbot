@@ -3,7 +3,17 @@ import { Meteor } from "meteor/meteor";
 
 import { ChatSession, Message } from "../types/session";
 
+const MESSAGE_PAGE_SIZE = 30;
 const createId = () => Math.random().toString(36).slice(2, 10);
+
+const toClientMessage = (
+  doc: Pick<Message, "content" | "sender"> & { _id?: string; createdAt: Date }
+): Message => ({
+  id: doc._id || createId(),
+  sender: doc.sender,
+  content: doc.content,
+  timestamp: doc.createdAt.getTime(),
+});
 
 const greetingForUser = (name?: string) =>
   `Hi${name ? `, ${name}` : " there"}! I'm your assistant—how can I help today?`;
@@ -18,25 +28,34 @@ const loadChats = (username: string): ChatSession[] => {
     try {
       const parsed = JSON.parse(stored) as ChatSession[];
       if (Array.isArray(parsed) && parsed.length) {
-        return parsed;
+        return parsed.map((chat) => ({
+          ...chat,
+          hasLoadedInitial: chat.hasLoadedInitial ?? true,
+          hasMore: chat.hasMore ?? false,
+          oldestTimestamp:
+            chat.oldestTimestamp ?? chat.messages[0]?.timestamp ?? null,
+        }));
       }
     } catch (error) {
       console.warn("Unable to parse stored chats", error);
     }
   }
 
+  const initialMessage: Message = {
+    id: createId(),
+    sender: "assistant",
+    content: greetingForUser(username),
+    timestamp: Date.now(),
+  };
+
   return [
     {
       id: createId(),
       title: "Welcome",
-      messages: [
-        {
-          id: createId(),
-          sender: "assistant",
-          content: greetingForUser(username),
-          timestamp: Date.now(),
-        },
-      ],
+      messages: [initialMessage],
+      hasMore: false,
+      hasLoadedInitial: true,
+      oldestTimestamp: initialMessage.timestamp,
     },
   ];
 };
@@ -45,6 +64,7 @@ export const useChatSessions = (userName: string) => {
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (!userName) {
@@ -94,6 +114,60 @@ export const useChatSessions = (userName: string) => {
     [activeChatId, chats]
   );
 
+  useEffect(() => {
+    const target = chats.find((chat) => chat.id === activeChatId);
+
+    if (!target || !target.threadId || target.hasLoadedInitial || isHistoryLoading) {
+      return;
+    }
+
+    const loadLatest = async () => {
+      setIsHistoryLoading(true);
+
+      try {
+        const docs = (await Meteor.callAsync(
+          "messages.fetchPage",
+          target.threadId,
+          { limit: MESSAGE_PAGE_SIZE }
+        )) as Array<
+          Pick<Message, "content" | "sender"> & { _id?: string; createdAt: Date }
+        >;
+
+        const loadedMessages = docs.map(toClientMessage);
+
+        setChats((current) =>
+          current.map((chat) => {
+            if (chat.id !== target.id) return chat;
+
+            const existingIds = new Set(chat.messages.map((msg) => msg.id));
+            const mergedMessages = [
+              ...loadedMessages,
+              ...chat.messages.filter((msg) => !existingIds.has(msg.id)),
+            ];
+
+            const oldestTimestamp = mergedMessages.length
+              ? Math.min(...mergedMessages.map((msg) => msg.timestamp))
+              : null;
+
+            return {
+              ...chat,
+              messages: mergedMessages,
+              hasMore: loadedMessages.length === MESSAGE_PAGE_SIZE,
+              oldestTimestamp,
+              hasLoadedInitial: true,
+            };
+          })
+        );
+      } catch (error) {
+        console.error("Failed to load latest messages", error);
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    };
+
+    void loadLatest();
+  }, [activeChatId, chats, isHistoryLoading]);
+
   const handleNewChat = async (title?: string) => {
     const chatTitle = title?.trim() || `Chat ${chats.length + 1}`;
     let threadId: string | undefined;
@@ -116,6 +190,9 @@ export const useChatSessions = (userName: string) => {
           timestamp: Date.now(),
         },
       ],
+      hasLoadedInitial: true,
+      hasMore: false,
+      oldestTimestamp: Date.now(),
     };
 
     setChats([newChat, ...chats]);
@@ -156,6 +233,10 @@ export const useChatSessions = (userName: string) => {
               ...chat,
               messages: [...chat.messages, userMessage],
               title: chat.title || "Conversation",
+              hasLoadedInitial: true,
+              hasMore: chat.hasMore ?? false,
+              oldestTimestamp:
+                chat.oldestTimestamp ?? userMessage.timestamp,
             }
           : chat
       )
@@ -179,7 +260,11 @@ export const useChatSessions = (userName: string) => {
       setChats((current) =>
         current.map((chat) =>
           chat.id === activeChat.id
-            ? { ...chat, messages: [...chat.messages, assistantMessage] }
+            ? {
+                ...chat,
+                messages: [...chat.messages, assistantMessage],
+                hasLoadedInitial: true,
+              }
             : chat
         )
       );
@@ -197,12 +282,68 @@ export const useChatSessions = (userName: string) => {
       setChats((current) =>
         current.map((chat) =>
           chat.id === activeChat.id
-            ? { ...chat, messages: [...chat.messages, fallbackMessage] }
+            ? {
+                ...chat,
+                messages: [...chat.messages, fallbackMessage],
+                hasLoadedInitial: true,
+              }
             : chat
         )
       );
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+
+  const loadOlderMessages = async () => {
+    if (!activeChat?.threadId || isHistoryLoading) {
+      return;
+    }
+
+    setIsHistoryLoading(true);
+
+    try {
+      const beforeDate = activeChat.oldestTimestamp
+        ? new Date(activeChat.oldestTimestamp)
+        : new Date();
+
+      const docs = (await Meteor.callAsync(
+        "messages.fetchPage",
+        activeChat.threadId,
+        { before: beforeDate, limit: MESSAGE_PAGE_SIZE }
+      )) as Array<
+        Pick<Message, "content" | "sender"> & { _id?: string; createdAt: Date }
+      >;
+
+      const olderMessages = docs.map(toClientMessage);
+
+      setChats((current) =>
+        current.map((chat) => {
+          if (chat.id !== activeChat.id) return chat;
+
+          const existingIds = new Set(chat.messages.map((msg) => msg.id));
+          const dedupedOlder = olderMessages.filter(
+            (msg) => !existingIds.has(msg.id)
+          );
+          const updatedMessages = [...dedupedOlder, ...chat.messages];
+          const oldestTimestamp = updatedMessages.length
+            ? Math.min(...updatedMessages.map((msg) => msg.timestamp))
+            : chat.oldestTimestamp ?? null;
+
+          return {
+            ...chat,
+            messages: updatedMessages,
+            hasMore: olderMessages.length === MESSAGE_PAGE_SIZE,
+            oldestTimestamp,
+            hasLoadedInitial: true,
+          };
+        })
+      );
+    } catch (error) {
+      console.error("Failed to load older messages", error);
+    } finally {
+      setIsHistoryLoading(false);
     }
   };
 
@@ -238,9 +379,12 @@ export const useChatSessions = (userName: string) => {
     activeChat,
     activeChatId,
     isProcessing,
+    isHistoryLoading,
+    canLoadMoreHistory: activeChat?.hasMore ?? false,
     setActiveChatId,
     handleNewChat,
     sendMessage,
+    loadOlderMessages,
     removeChat,
   };
 };

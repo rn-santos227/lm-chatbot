@@ -10,4 +10,7 @@ export interface ChatSession {
   threadId?: string;
   title: string;
   messages: Message[];
+  hasMore?: boolean;
+  oldestTimestamp?: number | null;
+  hasLoadedInitial?: boolean;
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { ChatSession } from "../types/session";
-import { formatChatHtml } from "../utils/chatFormatter";
+import { formatChatHtml } from "../utils/formatter";
 
 interface MainLayoutProps {
   userName: string;
@@ -9,6 +9,9 @@ interface MainLayoutProps {
   onMessageChange: (value: string) => void;
   onSendMessage: () => void;
   isProcessing: boolean;
+  isHistoryLoading: boolean;
+  canLoadMoreHistory: boolean;
+  onLoadOlderMessages: () => void;
 }
 
 const formattedTimestamp = (timestamp: number) => {
@@ -23,6 +26,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   onMessageChange,
   onSendMessage,
   isProcessing,
+  isHistoryLoading,
+  canLoadMoreHistory,
+  onLoadOlderMessages,
 }) => {
   const disableSend = !messageInput.trim() || !activeChat;
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -66,6 +72,19 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto p-6 space-y-3 bg-gray-50"
       >
+        {canLoadMoreHistory && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={onLoadOlderMessages}
+              disabled={isHistoryLoading}
+              className="px-4 py-2 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full hover:bg-blue-100 disabled:opacity-60"
+            >
+              {isHistoryLoading ? "Loading history..." : "Load older messages"}
+            </button>
+          </div>
+        )}
+
         {activeChat?.messages.map((message: ChatSession['messages'][number]) => (
           <div
             key={message.id}

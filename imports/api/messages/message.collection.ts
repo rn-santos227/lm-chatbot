@@ -1,5 +1,5 @@
 import { Mongo } from "meteor/mongo";
-import type { MessageDoc } from "./message.type";
+import type { MessageDoc } from "./message.types";
 
 export const Messages = new Mongo.Collection<MessageDoc>("messages");
 

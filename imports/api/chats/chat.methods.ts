@@ -1,5 +1,5 @@
 import { Meteor } from "meteor/meteor";
-import { Chats } from "./chat.collection"
+import { Chats } from "./chat.collection";
 import { Messages } from "../messages/message.collection";
 
 Meteor.methods({
@@ -15,6 +15,7 @@ Meteor.methods({
       title: cleanedTitle,
       createdAt: now,
       updatedAt: now,
+      memory: [],
       model: Meteor.settings.lmstudio.model,
       temperature: 0.2,
     });
