@@ -1,6 +1,6 @@
 from io import BytesIO
 import boto3
-from ocr_bridge.settings import settings
+from src.settings import settings
 
 s3 = boto3.client(
     "s3",

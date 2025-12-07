@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from ocr_bridge.minio_client import fetch_file
-from ocr_bridge.ocr_engine import run_ocr
+from src.minio_client import fetch_file
+from src.ocr_engine import run_ocr
 
 app = FastAPI()
 

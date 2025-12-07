@@ -1,5 +1,6 @@
 from io import BytesIO
 from PIL import Image
+
 import pytesseract
 from pdf2image import convert_from_bytes
 
