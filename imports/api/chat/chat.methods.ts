@@ -4,8 +4,11 @@ import type { ChatThread } from "./chat.type"
 
 Meteor.methods({
   "chats.create"(title: string): string {
-    const now = new Date();
+    if (!title || typeof title !== "string") {
+      throw new Meteor.Error("invalid-title", "Chat title must be a non-empty string.");
+    }
 
+    const now = new Date();
     const threadId = Chats.insert({
       title: "New Chat",
       createdAt: now,
