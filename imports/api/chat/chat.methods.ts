@@ -21,4 +21,8 @@ Meteor.methods({
 
     return threadId;
   },
+
+  "chats.rename"(threadId: string, title: string) {
+
+  },
 });
