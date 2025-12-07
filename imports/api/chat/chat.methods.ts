@@ -23,6 +23,11 @@ Meteor.methods({
   },
 
   "chats.rename"(threadId: string, title: string) {
-
+    Chats.update(threadId, {
+      $set: {
+        title,
+        updatedAt: new Date(),
+      },
+    });
   },
 });
