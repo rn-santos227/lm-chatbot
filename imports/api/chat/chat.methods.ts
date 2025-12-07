@@ -8,9 +8,11 @@ Meteor.methods({
       throw new Meteor.Error("invalid-title", "Chat title must be a non-empty string.");
     }
 
+    const cleanedTitle = title.trim() || "New Chat";
     const now = new Date();
+
     const threadId = Chats.insert({
-      title: "New Chat",
+      title: cleanedTitle,
       createdAt: now,
       updatedAt: now,
       model: Meteor.settings.lmstudio.model,
