@@ -53,3 +53,50 @@ body {
 .chat-button {
   @apply bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 transition;
 }
+
+.modal-overlay {
+  animation: fade-in 150ms ease forwards;
+}
+
+.modal-content {
+  animation: pop-in 180ms ease forwards;
+  transform-origin: center;
+}
+
+.message-bubble {
+  animation: slide-up 220ms ease;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

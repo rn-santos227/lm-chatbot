@@ -20,8 +20,8 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({
   const canCreate = Boolean(chatTitle.trim());
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-6 shadow-2xl w-96 space-y-4">
+    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 modal-overlay">
+      <div className="bg-white rounded-2xl p-6 shadow-2xl w-96 space-y-4 modal-content">
         <h2 className="text-xl font-semibold">Start a new chat</h2>
 
         <p className="text-sm text-gray-600">

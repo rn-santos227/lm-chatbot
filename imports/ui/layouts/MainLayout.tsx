@@ -49,7 +49,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             }`}
           >
             <div
-              className={`max-w-3xl rounded-2xl px-4 py-3 shadow text-sm leading-relaxed border ${
+              className={`max-w-3xl rounded-2xl px-4 py-3 shadow text-sm leading-relaxed border message-bubble ${
                 message.sender === "user"
                   ? "bg-blue-600 text-white border-blue-600"
                   : "bg-white text-gray-900 border-gray-200"
