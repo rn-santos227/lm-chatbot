@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import SidebarLayout from "./layouts/SidebarLayout";
-import NameModal from "./components/NameModal";
-import NewChatModal from "./components/NewChatModal";
-import MainLayout from "./layouts/MainLayout";
+import { SidebarLayout } from "./layouts/SidebarLayout";
+import { NameModal } from "./components/NameModal";
+import { NewChatModal } from "./components/NewChatModal";
+import { MainLayout } from "./layouts/MainLayout";
 import { useChatSessions } from "./hooks/useChatSessions";
 
-export const App: React.FC  = () => {
+export const App = () => {
   const [userName, setUserName] = useState("");
   const [pendingName, setPendingName] = useState("");
   const [showNameModal, setShowNameModal] = useState(false);
