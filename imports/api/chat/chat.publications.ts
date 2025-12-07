@@ -6,3 +6,7 @@ Meteor.publish("chats.all", function () {
     sort: { updatedAt: -1 },
   });
 });
+
+Meteor.publish("chats.single", function (threadId: string) {
+
+});
