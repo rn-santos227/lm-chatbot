@@ -1,6 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@config "../tailwind.config.js";
+@source "../imports/**/*.{js,jsx,ts,tsx}";
+@source "./**/*.{js,jsx,ts,tsx}";
+@source "../server/**/*.{js,jsx,ts,tsx}";
+@source "../**/*.html";
 
 body {
   @apply bg-gray-100 text-gray-900 font-sans;
