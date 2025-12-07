@@ -1,6 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import { Chats } from "./chat.collection";
-import type { ChatThread } from "./chat.type"
+import { MessageDoc } from "../messages/message.type";
 
 Meteor.methods({
   "chats.create"(title: string): string {
@@ -23,6 +23,10 @@ Meteor.methods({
   },
 
   "chats.rename"(threadId: string, title: string) {
+    if (!threadId || typeof threadId !== "string") {
+      throw new Meteor.Error("invalid-thread", "Thread ID must be a string.");
+    }
+
     Chats.update(threadId, {
       $set: {
         title,
@@ -32,6 +36,10 @@ Meteor.methods({
   },
 
   "chats.delete"(threadId: string) {
+    if (!threadId || typeof threadId !== "string") {
+      throw new Meteor.Error("invalid-thread", "Thread ID must be a string.");
+    }
+
     Chats.remove(threadId);
     Meteor.call("messages.deleteByThread", threadId);
   }
