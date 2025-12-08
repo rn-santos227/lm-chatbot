@@ -1,8 +1,10 @@
 from io import BytesIO
-from PIL import Image
 
 import pytesseract
 from pdf2image import convert_from_bytes
+from PIL import Image
+
+from src.sanitizer import is_image_mime, is_pdf_mime
 
 def ocr_image(data: bytes) -> str:
     img = Image.open(BytesIO(data))
@@ -19,12 +21,10 @@ def ocr_pdf(data: bytes) -> str:
     return "\n\n".join(text_blocks)
 
 def run_ocr(file_bytes: bytes, mime_type: str) -> str:
-    mime_type = mime_type.lower()
-
-    if "pdf" in mime_type:
+    if is_pdf_mime(mime_type):
         return ocr_pdf(file_bytes)
 
-    if any(x in mime_type for x in ["jpeg", "jpg", "png", "bmp", "tiff"]):
+    if is_image_mime(mime_type):
         return ocr_image(file_bytes)
 
     raise ValueError(f"Unsupported MIME type for OCR: {mime_type}")
