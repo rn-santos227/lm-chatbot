@@ -20,7 +20,6 @@ class OCRRequest(BaseModel):
             raise ValueError(f"{value!r} is not a valid non-empty value")
         return cleaned
 
-
 class OCRResponse(BaseModel):
     text: str
     bucket: str
