@@ -44,10 +44,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   onRetryConnection,
   isCheckingConnection,
 }) => {
-  const disableSend = !messageInput.trim() || !activeChat || isLocked;
-  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [fileCommand, setFileCommand] = useState("");
+  const pendingFiles = uploadedFiles.filter((file) => !file.sent);
+  const disableSend =
+    (!messageInput.trim() && pendingFiles.length === 0) ||
+    !activeChat ||
+    isLocked;
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -68,18 +71,51 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   };
 
   const handleUploadComplete = (file: UploadedFile) => {
-    const trimmedCommand = fileCommand.trim();
+    const trimmedCommand = messageInput.trim();
     const fileWithInstruction: UploadedFile = {
       ...file,
       instruction: trimmedCommand || undefined,
+      sent: false,
     };
 
     setUploadedFiles((current) => [fileWithInstruction, ...current]);
-    setFileCommand("");
+  };
 
-    if (isLocked) return;
+  const handleSend = () => {
+    if (disableSend) return;
 
-    onAnalyzeFile(file, trimmedCommand);
+    const trimmedCommand = messageInput.trim();
+    const hasMessage = trimmedCommand.length > 0;
+    const filesToSend = pendingFiles;
+
+    if (hasMessage) {
+      onSendMessage();
+    } else {
+      onMessageChange("");
+    }
+
+    if (filesToSend.length > 0) {
+      filesToSend.forEach((file) => {
+        const fileWithInstruction = {
+          ...file,
+          instruction: trimmedCommand || undefined,
+        };
+
+        onAnalyzeFile(fileWithInstruction, trimmedCommand);
+      });
+
+      setUploadedFiles((current) =>
+        current.map((file) =>
+          filesToSend.some((pending) => pending._id === file._id)
+            ? {
+                ...file,
+                instruction: trimmedCommand || undefined,
+                sent: true,
+              }
+            : file
+        )
+      );
+    }
   };
 
   const handleRemoveFile = (fileId: string) => {
@@ -201,9 +237,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                         {file.originalName || file.key}
                       </p>
                       <p className="text-[11px] text-gray-600">{file.contentType}</p>
-                      {file.instruction && (
-                        <p className="mt-1 text-xs text-gray-700 max-h-10 overflow-hidden text-ellipsis leading-snug">
-                          Command: {file.instruction}
+                      {file.sent && (
+                        <p className="mt-1 text-[11px] font-semibold uppercase text-green-700">
+                          Sent
                         </p>
                       )}
                     </div>
@@ -230,20 +266,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
               disabled={isLocked}
             />
 
-            <div className="w-full lg:w-80 flex flex-col gap-2">
-              <label className="text-sm font-semibold text-gray-700" htmlFor="file-command">
-                Command for uploaded files (optional; leave blank to auto-summarize)
-              </label>
-              <input
-                id="file-command"
-                type="text"
-                value={fileCommand}
-                onChange={(e) => setFileCommand(e.target.value)}
-                disabled={isLocked}
-                placeholder="e.g. Summarize this document"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-              />
-
+            <div className="flex flex-row gap-2">
               <div className="flex gap-2 justify-end">
                 <UploadFileButton
                   onUploadComplete={handleUploadComplete}
@@ -255,7 +278,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 />
 
                 <button
-                  onClick={onSendMessage}
+                  onClick={handleSend}
                   disabled={disableSend}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 transition"
                 >
