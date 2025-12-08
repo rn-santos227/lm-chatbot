@@ -9,6 +9,7 @@ import "../imports/api/messages/message.publications";
 import "../imports/api/messages/message.methods";
 
 import "../imports/api/lmstudio/lmstudio.methods";
+import "../imports/api/ocr/ocr.methods";
 
 import "./minio/client";
 import "./minio/upload";

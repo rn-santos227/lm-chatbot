@@ -12,6 +12,7 @@ interface MainLayoutProps {
   messageInput: string;
   onMessageChange: (value: string) => void;
   onSendMessage: () => void;
+  onAnalyzeFile: (file: UploadedFile) => void;
   isProcessing: boolean;
   isHistoryLoading: boolean;
   canLoadMoreHistory: boolean;
@@ -32,6 +33,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   messageInput,
   onMessageChange,
   onSendMessage,
+  onAnalyzeFile,
   isProcessing,
   isHistoryLoading,
   canLoadMoreHistory,
@@ -64,6 +66,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
   const handleUploadComplete = (file: UploadedFile) => {
     setUploadedFiles((current) => [file, ...current]);
+    if (isLocked) return;
+
+    onAnalyzeFile(file);
   };
 
   return (

@@ -10,6 +10,7 @@ import {
 import { useChatHistory } from "./useChatHistory";
 import { useChatState } from "./useChatState";
 import { useThreadBootstrap } from "./useThreadBootstrap";
+import type { UploadedFile } from "../types/file";
 
 export const useChatSessions = (
   userName: string,
@@ -43,7 +44,7 @@ export const useChatSessions = (
     void loadMessagesForChat(activeChat, { placement: "prepend" });
   }, [activeChat, isHistoryLoading, loadMessagesForChat]);
 
- const handleNewChat = useCallback(
+  const handleNewChat = useCallback(
     async (title?: string) => {
       const chatTitle = title?.trim() || `Chat ${chats.length + 1}`;
       let threadId: string | undefined;
@@ -102,6 +103,7 @@ export const useChatSessions = (
   const sendMessage = useCallback(
     async (content: string) => {
       if (!content.trim() || !activeChat) return;
+      setIsProcessing(true);
       const userMessage: Message = {
         id: createId(),
         sender: "user",
@@ -149,6 +151,73 @@ export const useChatSessions = (
     [activeChat, appendMessageToChat, ensureThreadId, userName]
   );
 
+  const analyzeFile = useCallback(
+    async (file: UploadedFile) => {
+      if (!activeChat) {
+        console.warn("No active chat available for OCR analysis");
+        return;
+      }
+
+      setIsProcessing(true);
+      const threadId = await ensureThreadId(activeChat);
+      if (!threadId) {
+        setIsProcessing(false);
+        return;
+      }
+
+      try {
+        const ocrResponse = await Meteor.callAsync("ocr.extractText", {
+          bucket: file.bucket,
+          key: file.key,
+          mime_type: file.contentType,
+        });
+
+        const userMessage: Message = {
+          id: createId(),
+          sender: "user",
+          content: `Here is the extracted text from ${
+            file.originalName || "an uploaded file"
+          }:\n\n${ocrResponse?.text ?? "(No text detected)"}`,
+          timestamp: Date.now(),
+        };
+
+        appendMessageToChat(activeChat.id, userMessage, { ensureTitle: true });
+
+        const response = await Meteor.callAsync(
+          "messages.userSend",
+          threadId,
+          userMessage.content
+        );
+
+        const assistantMessage: Message = {
+          id: response?.assistantMessageId || createId(),
+          sender: "assistant",
+          content:
+            response?.assistantText ??
+            "I extracted the text but could not generate an analysis right now.",
+          timestamp: Date.now(),
+        };
+
+        appendMessageToChat(activeChat.id, assistantMessage);
+      } catch (error) {
+        console.error("OCR analysis failed", error);
+        onLmStudioError?.(error);
+        const fallback: Message = {
+          id: createId(),
+          sender: "assistant",
+          content:
+            "I couldn't analyze that file. Please try again or share a different document.",
+          timestamp: Date.now(),
+        };
+
+        appendMessageToChat(activeChat.id, fallback);
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [activeChat, appendMessageToChat, ensureThreadId, onLmStudioError]
+  );
+
   const removeChat = useCallback(
     async (chatId: string) => {
       if (chatId === activeChatId) {
@@ -186,6 +255,7 @@ export const useChatSessions = (
     setActiveChatId,
     handleNewChat,
     sendMessage,
+    analyzeFile,
     loadOlderMessages,
     removeChat,
   };

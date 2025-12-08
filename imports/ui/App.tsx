@@ -34,6 +34,7 @@ export const App = () => {
     setActiveChatId,
     handleNewChat,
     sendMessage,
+    analyzeFile,
     loadOlderMessages,
     removeChat,
   } = useChatSessions(userName, (error) => {
@@ -163,6 +164,7 @@ export const App = () => {
           messageInput={messageInput}
           onMessageChange={setMessageInput}
           onSendMessage={handleSendMessage}
+          onAnalyzeFile={analyzeFile}
           isProcessing={isProcessing}
           isHistoryLoading={isHistoryLoading}
           canLoadMoreHistory={canLoadMoreHistory}
