@@ -12,6 +12,9 @@ interface MainLayoutProps {
   isHistoryLoading: boolean;
   canLoadMoreHistory: boolean;
   onLoadOlderMessages: () => void;
+  isLocked: boolean;
+  onRetryConnection: () => void;
+  isCheckingConnection: boolean;
 }
 
 const formattedTimestamp = (timestamp: number) => {
@@ -29,8 +32,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   isHistoryLoading,
   canLoadMoreHistory,
   onLoadOlderMessages,
+  isLocked,
+  onRetryConnection,
+  isCheckingConnection,
 }) => {
-  const disableSend = !messageInput.trim() || !activeChat;
+  const disableSend = !messageInput.trim() || !activeChat || isLocked;
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleKeyDown = (
@@ -60,6 +66,21 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             {activeChat?.title || "No chat selected"}
           </p>
           <h1 className="text-2xl font-semibold">Assistant Chat</h1>
+
+          {isLocked && (
+            <div className="mt-2 inline-flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 border border-red-200">
+              <span className="h-2 w-2 rounded-full bg-red-500" aria-hidden />
+              <span>LM Studio connection required to chat.</span>
+              <button
+                type="button"
+                onClick={onRetryConnection}
+                disabled={isCheckingConnection}
+                className="text-red-800 font-semibold underline disabled:opacity-60"
+              >
+                {isCheckingConnection ? "Checking..." : "Retry"}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="text-right">
@@ -77,7 +98,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             <button
               type="button"
               onClick={onLoadOlderMessages}
-              disabled={isHistoryLoading}
+              disabled={isHistoryLoading || isLocked}
               className="px-4 py-2 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full hover:bg-blue-100 disabled:opacity-60"
             >
               {isHistoryLoading ? "Loading history..." : "Load older messages"}
@@ -133,8 +154,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             value={messageInput}
             onKeyDown={handleKeyDown}
             onChange={(e) => onMessageChange(e.target.value)}
-            className="flex-1 h-24 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 h-24 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             placeholder="Send a message to the assistant..."
+            disabled={isLocked}
           />
 
           <button

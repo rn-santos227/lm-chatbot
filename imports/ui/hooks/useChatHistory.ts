@@ -13,7 +13,8 @@ type LoadOptions = { before?: Date; placement: "prepend" | "append" };
 
 export const useChatHistory = (
   activeChat: ChatSession | null,
-  updateChatById: UpdateChatById
+  updateChatById: UpdateChatById,
+  onLmStudioError?: (error: unknown) => void
 ) => {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
@@ -54,11 +55,12 @@ export const useChatHistory = (
         );
       } catch (error) {
         console.error("Failed to load messages", error);
+        onLmStudioError?.(error);
       } finally {
         setIsHistoryLoading(false);
       }
     },
-    [fetchMessages, updateChatById]
+    [fetchMessages, onLmStudioError, updateChatById]
   );
 
   const loadOlderMessages = useCallback(async () => {

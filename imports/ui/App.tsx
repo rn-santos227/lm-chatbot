@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Meteor } from "meteor/meteor";
 
 import { SideBarLayout } from "./layouts/SideBarLayout";
@@ -15,6 +15,10 @@ export const App = () => {
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [pendingChatTitle, setPendingChatTitle] = useState("");
   const [messageInput, setMessageInput] = useState("");
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [isLmStudioConnected, setIsLmStudioConnected] = useState<
+    boolean | null
+  >(null);
   const [toast, setToast] = useState<{
     message: string;
     type?: "success" | "error" | "info";
@@ -30,9 +34,46 @@ export const App = () => {
     setActiveChatId,
     handleNewChat,
     sendMessage,
-   loadOlderMessages,
+    loadOlderMessages,
     removeChat,
-  } = useChatSessions(userName);
+  } = useChatSessions(userName, (error) => {
+    console.error("LM Studio request failed", error);
+    setIsLmStudioConnected(false);
+    setToast({
+      message:
+        "Lost connection to LM Studio. The app is locked until connection is restored.",
+      type: "error",
+    });
+  });
+
+  const isLocked = useMemo(
+    () => isLmStudioConnected === false,
+    [isLmStudioConnected]
+  );
+
+  const checkConnection = useCallback(async () => {
+    setIsCheckingConnection(true);
+    try {
+      const ok = await Meteor.callAsync("lmstudio.health");
+      setIsLmStudioConnected(ok);
+      setToast({
+        message: ok
+          ? "Connected to LM Studio"
+          : "LM Studio unreachable. The app is locked until connection is restored.",
+        type: ok ? "success" : "error",
+      });
+    } catch (error) {
+      console.error("LM Studio health check failed", error);
+      setIsLmStudioConnected(false);
+      setToast({
+        message:
+          "Unable to verify LM Studio connection. The app is locked until it is restored.",
+        type: "error",
+      });
+    } finally {
+      setIsCheckingConnection(false);
+    }
+  }, []);
 
   useEffect(() => {
     const storedName = localStorage.getItem("chat-username") || "";
@@ -54,41 +95,45 @@ export const App = () => {
   };
 
   const handleSendMessage = () => {
+    if (isLocked) {
+      setToast({
+        message: "Connect to LM Studio to continue chatting.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!messageInput.trim()) return;
     sendMessage(messageInput);
     setMessageInput("");
   };
 
   useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const ok = await Meteor.callAsync("lmstudio.health");
-        setToast({
-          message: ok
-            ? "Connected to LM Studio"
-            : "LM Studio unreachable. Messages may fail.",
-          type: ok ? "success" : "error",
-        });
-      } catch (error) {
-        console.error("LM Studio health check failed", error);
-        setToast({
-          message: "Unable to verify LM Studio connection.",
-          type: "error",
-        });
-      }
-    };
-
     void checkConnection();
-  }, []);
+  }, [checkConnection]);
 
   const handleOpenNewChatModal = () => {
+    if (isLocked) {
+      setToast({
+        message: "Cannot create chats until LM Studio is reachable.",
+        type: "error",
+      });
+      return;
+    }
+
     setPendingChatTitle(`Chat ${chats.length + 1}`);
     setShowNewChatModal(true);
   };
 
   const handleCreateChat = (title: string) => {
+    if (isLocked) {
+      setToast({
+        message: "Cannot create chats until LM Studio is reachable.",
+        type: "error",
+      });
+      return;
+    }
     const trimmedTitle = title.trim();
-
     if (!trimmedTitle) return;
 
     handleNewChat(trimmedTitle);
@@ -107,6 +152,9 @@ export const App = () => {
           onDeleteChat={removeChat}
           onNewChat={handleOpenNewChatModal}
           onEditName={() => setShowNameModal(true)}
+          isLocked={isLocked}
+          onRetryConnection={checkConnection}
+          isCheckingConnection={isCheckingConnection}
         />
 
         <MainLayout
@@ -119,6 +167,9 @@ export const App = () => {
           isHistoryLoading={isHistoryLoading}
           canLoadMoreHistory={canLoadMoreHistory}
           onLoadOlderMessages={loadOlderMessages}
+          isLocked={isLocked}
+          onRetryConnection={checkConnection}
+          isCheckingConnection={isCheckingConnection}
         />
       </div>
 

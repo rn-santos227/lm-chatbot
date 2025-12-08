@@ -9,6 +9,9 @@ interface SideBarProps {
   onNewChat: () => void;
   onEditName: () => void;
   onDeleteChat: (id: string) => void;
+  isLocked: boolean;
+  onRetryConnection: () => void;
+  isCheckingConnection: boolean;
 }
 
 export const SideBarLayout: React.FC<SideBarProps> = ({
@@ -19,6 +22,9 @@ export const SideBarLayout: React.FC<SideBarProps> = ({
   onNewChat,
   onEditName,
   onDeleteChat,
+  isLocked,
+  onRetryConnection,
+  isCheckingConnection,
 }) => (
   <aside className="w-72 bg-gray-900 text-white flex flex-col">
     <div className="p-4 border-b border-gray-800 flex items-center justify-between">
@@ -37,11 +43,26 @@ export const SideBarLayout: React.FC<SideBarProps> = ({
 
     <div className="p-4 border-b border-gray-800">
       <button
-        className="w-full bg-white text-gray-900 font-semibold py-2 rounded-lg shadow hover:-translate-y-0.5 transition transform"
+        className="w-full bg-white text-gray-900 font-semibold py-2 rounded-lg shadow hover:-translate-y-0.5 transition transform disabled:opacity-60 disabled:cursor-not-allowed"
         onClick={onNewChat}
+        disabled={isLocked}
       >
         + New chat
       </button>
+      {isLocked && (
+        <div className="mt-3 text-sm text-red-200 bg-red-800/40 border border-red-700 rounded-lg p-3">
+          <p className="font-semibold">App is locked</p>
+          <p className="text-red-100">Please start LM Studio and retry the connection.</p>
+          <button
+            type="button"
+            onClick={onRetryConnection}
+            disabled={isCheckingConnection}
+            className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-white text-gray-900 rounded-md font-semibold disabled:opacity-50"
+          >
+            {isCheckingConnection ? "Checking..." : "Retry connection"}
+          </button>
+        </div>
+      )}
     </div>
 
     <div className="flex-1 overflow-y-auto">

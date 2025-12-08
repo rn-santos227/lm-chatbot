@@ -6,7 +6,8 @@ import { ChatSession } from "../types/session";
 export const useThreadBootstrap = (
   userName: string,
   chats: ChatSession[],
-  setChats: (updater: ChatSession[] | ((current: ChatSession[]) => ChatSession[])) => void
+  setChats: (updater: ChatSession[] | ((current: ChatSession[]) => ChatSession[])) => void,
+  onLmStudioError?: (error: unknown) => void
 ) => {
   useEffect(() => {
     if (!userName || !chats.length) return;
@@ -32,6 +33,7 @@ export const useThreadBootstrap = (
           withThreads.push({ ...chat, threadId });
         } catch (error) {
           console.error("Failed to create LM Studio thread", error);
+          onLmStudioError?.(error);
           withThreads.push(chat);
         }
       }
@@ -40,5 +42,5 @@ export const useThreadBootstrap = (
     };
 
     void ensureThreads();
-  }, [userName, chats, setChats]);
+  }, [onLmStudioError, userName, chats, setChats]);
 };

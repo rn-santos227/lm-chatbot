@@ -11,7 +11,10 @@ import { useChatHistory } from "./useChatHistory";
 import { useChatState } from "./useChatState";
 import { useThreadBootstrap } from "./useThreadBootstrap";
 
-export const useChatSessions = (userName: string) => {
+export const useChatSessions = (
+  userName: string,
+  onLmStudioError?: (error: unknown) => void
+) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const {
     chats,
@@ -22,10 +25,10 @@ export const useChatSessions = (userName: string) => {
     updateChatById,
     appendMessageToChat,
   } = useChatState(userName);
-  useThreadBootstrap(userName, chats, setChats);
+  useThreadBootstrap(userName, chats, setChats, onLmStudioError);
   
   const { isHistoryLoading, loadMessagesForChat, loadOlderMessages } =
-    useChatHistory(activeChat, updateChatById);
+    useChatHistory(activeChat, updateChatById, onLmStudioError);
 
   useEffect(() => {
     if (
@@ -49,6 +52,7 @@ export const useChatSessions = (userName: string) => {
         threadId = await Meteor.callAsync("chats.create", chatTitle);
       } catch (error) {
         console.error("Unable to create chat thread", error);
+        onLmStudioError?.(error);
       }
 
       const initialMessage: Message = {
@@ -88,6 +92,7 @@ export const useChatSessions = (userName: string) => {
         return threadId;
       } catch (error) {
         console.error("Failed to create LM Studio thread", error);
+        onLmStudioError?.(error);
         return undefined;
       }
     },
@@ -128,6 +133,7 @@ export const useChatSessions = (userName: string) => {
         appendMessageToChat(activeChat.id, assistantMessage);
       } catch (error) {
         console.error("LM Studio reply failed", error);
+        onLmStudioError?.(error);
         const fallbackMessage: Message = {
           id: createId(),
           sender: "assistant",
@@ -163,10 +169,11 @@ export const useChatSessions = (userName: string) => {
           await Meteor.callAsync("chats.delete", chatToDelete.threadId);
         } catch (error) {
           console.error("Unable to delete chat thread", error);
+          onLmStudioError?.(error);
         }
       }
     },
-    [activeChatId, chats, setActiveChatId, setChats]
+    [activeChatId, chats, onLmStudioError, setActiveChatId, setChats]
   );
 
   return {
