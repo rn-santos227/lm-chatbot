@@ -7,5 +7,7 @@ import type { FileDoc } from "./file.types";
 import { minioClient } from "../../../server/minio/client";
 
 Meteor.methods({
-
+  async "files.list"() {
+    return Files.find({}, { sort: { createdAt: -1 } }).fetchAsync();
+  },
 });
