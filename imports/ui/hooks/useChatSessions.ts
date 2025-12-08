@@ -17,6 +17,8 @@ export const useChatSessions = (
   onLmStudioError?: (error: unknown) => void
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+
   const {
     chats,
     setChats,
@@ -104,6 +106,7 @@ export const useChatSessions = (
     async (content: string) => {
       if (!content.trim() || !activeChat) return;
       setIsProcessing(true);
+      setProcessingStatus("Sending your message to LM Studio...");
       const userMessage: Message = {
         id: createId(),
         sender: "user",
@@ -118,6 +121,7 @@ export const useChatSessions = (
 
       appendMessageToChat(activeChat.id, userMessage, { ensureTitle: true });
       try {
+        setProcessingStatus("Awaiting assistant response from LM Studio...");
         const response = await Meteor.callAsync(
           "messages.userSend",
           threadId,
@@ -146,13 +150,14 @@ export const useChatSessions = (
         appendMessageToChat(activeChat.id, fallbackMessage);
       } finally {
         setIsProcessing(false);
+        setProcessingStatus(null);
       }
     },
     [activeChat, appendMessageToChat, ensureThreadId, userName]
   );
 
   const analyzeFile = useCallback(
-    async (file: UploadedFile) => {
+    async (file: UploadedFile, command?: string) => {
       if (!activeChat) {
         console.warn("No active chat available for OCR analysis");
         return;
@@ -166,6 +171,12 @@ export const useChatSessions = (
       }
 
       try {
+        const trimmedCommand = command?.trim();
+        const commandText =
+          trimmedCommand && trimmedCommand.length > 0
+            ? trimmedCommand
+            : "No specific command provided. Please scan the file and provide a concise summary of the contents you processed.";
+
         const ocrResponse = await Meteor.callAsync("ocr.extractText", {
           bucket: file.bucket,
           key: file.key,
@@ -175,13 +186,14 @@ export const useChatSessions = (
         const userMessage: Message = {
           id: createId(),
           sender: "user",
-          content: `Here is the extracted text from ${
+          content: `File command: ${commandText}\n\nHere is the extracted text from ${
             file.originalName || "an uploaded file"
           }:\n\n${ocrResponse?.text ?? "(No text detected)"}`,
           timestamp: Date.now(),
         };
 
         appendMessageToChat(activeChat.id, userMessage, { ensureTitle: true });
+        setProcessingStatus("Sending extracted text to LM Studio...");
 
         const response = await Meteor.callAsync(
           "messages.userSend",
@@ -189,6 +201,7 @@ export const useChatSessions = (
           userMessage.content
         );
 
+        setProcessingStatus("Awaiting assistant response from LM Studio...");
         const assistantMessage: Message = {
           id: response?.assistantMessageId || createId(),
           sender: "assistant",
@@ -213,6 +226,7 @@ export const useChatSessions = (
         appendMessageToChat(activeChat.id, fallback);
       } finally {
         setIsProcessing(false);
+        setProcessingStatus(null);
       }
     },
     [activeChat, appendMessageToChat, ensureThreadId, onLmStudioError]
@@ -250,6 +264,7 @@ export const useChatSessions = (
     activeChat,
     activeChatId,
     isProcessing,
+    processingStatus,
     isHistoryLoading,
     canLoadMoreHistory: activeChat?.hasMore ?? false,
     setActiveChatId,

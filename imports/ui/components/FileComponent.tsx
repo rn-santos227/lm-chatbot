@@ -52,6 +52,20 @@ export const FileComponent: React.FC<FileComponentProps> = ({
             </a>
           </div>
 
+
+          {file.instruction && (
+            <div
+              className={`text-xs rounded-lg px-3 py-2 border ${
+                isSent
+                  ? "border-white/20 bg-white/10 text-blue-50"
+                  : "border-gray-200 bg-gray-50 text-gray-700"
+              }`}
+            >
+              <p className="font-semibold mb-1">Command</p>
+              <p className="leading-snug whitespace-pre-wrap">{file.instruction}</p>
+            </div>
+          )}
+
           <div
             className={`rounded-xl overflow-hidden border ${
               isSent ? "border-white/20 bg-white/10" : "border-gray-200 bg-white"
