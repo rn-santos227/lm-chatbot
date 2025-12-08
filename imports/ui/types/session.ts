@@ -1,7 +1,11 @@
+import type { UploadedFile } from "./file";
+
 export interface Message {
   id: string;
   sender: "user" | "assistant";
   content: string;
+  displayText?: string;
+  attachments?: UploadedFile[];
   timestamp: number;
 }
 

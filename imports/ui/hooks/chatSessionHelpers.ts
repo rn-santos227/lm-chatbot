@@ -9,6 +9,7 @@ export const toClientMessage = (
   id: doc._id || createId(),
   sender: doc.sender,
   content: doc.content,
+  displayText: doc.content,
   timestamp: doc.createdAt.getTime(),
 });
 
@@ -52,7 +53,7 @@ export const mergeChatWithMessages = (
   };
 };
 
-export const loadChats = (username: string): ChatSession[] => {
+export const loadChats = (userName: string): ChatSession[] => {
   const stored = localStorage.getItem("chat-sessions");
 
   if (stored) {
@@ -75,7 +76,8 @@ export const loadChats = (username: string): ChatSession[] => {
   const initialMessage: Message = {
     id: createId(),
     sender: "assistant",
-    content: greetingForUser(username),
+    content: greetingForUser(userName),
+    displayText: greetingForUser(userName),
     timestamp: Date.now(),
   };
 

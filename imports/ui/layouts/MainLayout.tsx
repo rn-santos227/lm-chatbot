@@ -129,7 +129,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     const hasMessage = trimmedCommand.length > 0;
     const filesToSend = pendingAttachments;
 
-    if (hasMessage) {
+    if (hasMessage && filesToSend.length === 0) {
       onSendMessage();
     } else {
       onMessageChange("");
@@ -253,47 +253,49 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           </div>
         )}
 
-        {activeChat?.messages.map((message: ChatSession['messages'][number]) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.sender === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div
-              className={`max-w-3xl rounded-2xl px-4 py-3 shadow text-sm leading-relaxed border message-bubble ${
-                message.sender === "user"
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-900 border-gray-200"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-3 mb-1">
-                <span className="text-xs font-semibold uppercase tracking-wide">
-                  {message.sender === "user" ? userName || "User" : "Assistant"}
-                </span>
+        {activeChat?.messages.map((message: ChatSession['messages'][number]) => {
+          const isUser = message.sender === "user";
+          const visibleText = message.displayText ?? message.content;
 
-                <span className="text-[10px] opacity-70">
-                  {formattedTimestamp(message.timestamp)}
-                </span>
-              </div>
+          return (
+            <div key={message.id} className="space-y-2">
+              {visibleText && (
+                <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-3xl rounded-2xl px-4 py-3 shadow text-sm leading-relaxed border message-bubble ${
+                      isUser
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-900 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3 mb-1">
+                      <span className="text-xs font-semibold uppercase tracking-wide">
+                        {isUser ? userName || "User" : "Assistant"}
+                      </span>
 
-              <div
-                className="chat-content whitespace-pre-wrap"
-                dangerouslySetInnerHTML={formatChatHtml(message.content)}
-              />
+                      <span className="text-[10px] opacity-70">
+                        {formattedTimestamp(message.timestamp)}
+                      </span>
+                    </div>
+
+                    <div
+                      className="chat-content whitespace-pre-wrap"
+                      dangerouslySetInnerHTML={formatChatHtml(visibleText)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {message.attachments?.map((file, index) => (
+                <FileComponent
+                  key={`${message.id}-${file._id || file.key || index}`}
+                  file={{ ...file, sent: true }}
+                  align={isUser ? "right" : "left"}
+                />
+              ))}
             </div>
-          </div>
-        ))}
-
-        {attachments
-          .filter((file) => file.uploaded)
-          .map((file) => (
-            <FileComponent
-              key={file.id}
-              file={{ ...file.uploaded!, sent: file.sent }}
-              align="right"
-            />
-          ))}
+          );
+        })}
 
         {isProcessing && (
           <div className="flex justify-start">

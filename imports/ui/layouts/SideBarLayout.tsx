@@ -90,7 +90,8 @@ export const SideBarLayout: React.FC<SideBarProps> = ({
                 <p className="font-semibold truncate">{chat.title}</p>
 
                 <p className="text-xs text-gray-400 truncate">
-                  {chat.messages[chat.messages.length - 1]?.content ||
+                  {chat.messages[chat.messages.length - 1]?.displayText ||
+                    chat.messages[chat.messages.length - 1]?.content ||
                     "New conversation"}
                 </p>
               </div>

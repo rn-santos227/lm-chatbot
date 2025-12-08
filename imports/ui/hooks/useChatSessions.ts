@@ -62,6 +62,7 @@ export const useChatSessions = (
         id: createId(),
         sender: "assistant",
         content: greetingForUser(userName),
+        displayText: greetingForUser(userName),
         timestamp: Date.now(),
       };
 
@@ -111,6 +112,7 @@ export const useChatSessions = (
         id: createId(),
         sender: "user",
         content: content.trim(),
+        displayText: content.trim(),
         timestamp: Date.now(),
       };
       const threadId = await ensureThreadId(activeChat);
@@ -133,6 +135,8 @@ export const useChatSessions = (
           sender: "assistant",
           content:
             response?.assistantText ?? assistantReply(userName, userMessage.content),
+          displayText:
+            response?.assistantText ?? assistantReply(userName, userMessage.content),
           timestamp: Date.now(),
         };
 
@@ -144,6 +148,8 @@ export const useChatSessions = (
           id: createId(),
           sender: "assistant",
           content:
+            "I couldn't get a response from LM Studio right now. Please try again shortly.",
+          displayText:
             "I couldn't get a response from LM Studio right now. Please try again shortly.",
           timestamp: Date.now(),
         };
@@ -189,6 +195,17 @@ export const useChatSessions = (
           content: `File command: ${commandText}\n\nHere is the extracted text from ${
             file.originalName || "an uploaded file"
           }:\n\n${ocrResponse?.text ?? "(No text detected)"}`,
+          displayText:
+            trimmedCommand && trimmedCommand.length > 0
+              ? trimmedCommand
+              : `Shared ${file.originalName || "a file"} for analysis`,
+          attachments: [
+            {
+              ...file,
+              sent: true,
+              instruction: trimmedCommand || undefined,
+            },
+          ],
           timestamp: Date.now(),
         };
 
@@ -208,6 +225,9 @@ export const useChatSessions = (
           content:
             response?.assistantText ??
             "I extracted the text but could not generate an analysis right now.",
+          displayText:
+            response?.assistantText ??
+            "I extracted the text but could not generate an analysis right now.",
           timestamp: Date.now(),
         };
 
@@ -219,6 +239,8 @@ export const useChatSessions = (
           id: createId(),
           sender: "assistant",
           content:
+            "I couldn't analyze that file. Please try again or share a different document.",
+          displayText:
             "I couldn't analyze that file. Please try again or share a different document.",
           timestamp: Date.now(),
         };
