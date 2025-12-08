@@ -52,4 +52,27 @@ Meteor.methods({
       metadata,
     });
   },
+
+
+  async "files.delete"(fileId: string) {
+    if (!fileId || typeof fileId !== "string") {
+      throw new Meteor.Error("invalid-id", "File id must be a string.");
+    }
+
+    const doc = await Files.findOneAsync(fileId);
+
+    if (!doc) {
+      throw new Meteor.Error("not-found", "File not found.");
+    }
+
+    await minioClient.send(
+      new DeleteObjectCommand({
+        Bucket: doc.bucket,
+        Key: doc.key,
+      })
+    );
+
+    await Files.removeAsync(fileId);
+    return true;
+  },
 });
