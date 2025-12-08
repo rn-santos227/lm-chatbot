@@ -6,8 +6,9 @@ import { Chats } from "../chats/chat.collection";
 import type { LMMessage, LMChatResponse } from "../lmstudio/lmstudio.types";
 import { lmChatRequest } from "../lmstudio/lmstudio.service";
 
-const MAX_CONTEXT_MESSAGES = 12;
+const MAX_CONTEXT_MESSAGES = 6;
 const MAX_MEMORY_ITEMS = 10;
+const MAX_CONTEXT_CHARS = 700;
 const DEFAULT_FETCH_LIMIT = 30;
 const MAX_FETCH_LIMIT = 100;
 
@@ -29,10 +30,13 @@ const buildSystemPrompt = (memory: string[] = []): LMMessage => {
   };
 };
 
+const trimForContext = (text: string): string =>
+  text.length > MAX_CONTEXT_CHARS ? `${text.slice(0, MAX_CONTEXT_CHARS)}...` : text;
+
 const toLMHistory = (docs: MessageDoc[]): LMMessage[] =>
   docs.map((m) => ({
     role: m.sender === "assistant" ? "assistant" : "user",
-    content: m.content,
+    content: trimForContext(m.content),
   }));
 
 const createMemoryEntry = (userText: string, assistantText: string): string => {
