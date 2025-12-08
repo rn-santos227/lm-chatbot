@@ -3,6 +3,8 @@ import { Meteor } from 'meteor/meteor';
 import "../imports/api/chats/chat.publications";
 import "../imports/api/chats/chat.methods";
 
+import "../imports/api/files/file.methods";
+
 import "../imports/api/messages/message.publications";
 import "../imports/api/messages/message.methods";
 

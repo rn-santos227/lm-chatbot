@@ -4,7 +4,10 @@ import { Meteor } from "meteor/meteor";
 import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
-import { minioClient } from "./client"
+import { minioClient } from "./client";
+
+import { Files } from "../../imports/api/files/file.collection";
+import type { FileDoc } from "../../imports/api/files/file.types";
 
 const minio = Meteor.settings.minio;
 
@@ -40,6 +43,17 @@ WebApp.connectHandlers.use("/upload", (req, res, next) => {
       );
 
       const finalUrl = `${minio.publicBaseUrl}/${bucket}/${fileName}`;
+      const fileDoc: FileDoc = {
+        bucket,
+        key: fileName,
+        url: finalUrl,
+        contentType,
+        size: buffer.length,
+        originalName,
+        createdAt: new Date(),
+      };
+
+      const fileId = await Files.insertAsync(fileDoc);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
@@ -47,6 +61,9 @@ WebApp.connectHandlers.use("/upload", (req, res, next) => {
           bucket,
           key: fileName,
           contentType,
+          fileId,
+          size: buffer.length,
+          originalName,
         })
       );
     } catch (err) {
