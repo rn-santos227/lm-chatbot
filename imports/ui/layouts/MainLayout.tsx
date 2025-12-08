@@ -4,7 +4,8 @@ import { formatChatHtml } from "../utils/formatter";
 
 import { UploadFileButton } from "../components/UploadFileButton";
 import { FileComponent } from "../components/FileComponent";
-import type { UploadedFile } from "../types/file";
+import type { UploadedFile, Attachment } from "../types/file";
+import { createId } from "../hooks/chatSessionHelpers";
 
 interface MainLayoutProps {
   userName: string;
@@ -44,10 +45,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   onRetryConnection,
   isCheckingConnection,
 }) => {
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const pendingFiles = uploadedFiles.filter((file) => !file.sent);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isUploadingAttachments, setIsUploadingAttachments] = useState(false);
+  const pendingAttachments = attachments.filter((file) => !file.sent);
   const disableSend =
-    (!messageInput.trim() && pendingFiles.length === 0) ||
+    isUploadingAttachments ||
+    (!messageInput.trim() && pendingAttachments.length === 0) ||
     !activeChat ||
     isLocked;
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -65,28 +68,66 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       if (!disableSend) {
-        onSendMessage();
+        void handleSend();
       }
     }
   };
 
-  const handleUploadComplete = (file: UploadedFile) => {
-    const trimmedCommand = messageInput.trim();
-    const fileWithInstruction: UploadedFile = {
-      ...file,
-      instruction: trimmedCommand || undefined,
-      sent: false,
-    };
-
-    setUploadedFiles((current) => [fileWithInstruction, ...current]);
+  const handleFileSelected = (file: File) => {
+    setAttachments((current) => [
+      {
+        id: createId(),
+        file,
+        sent: false,
+      },
+      ...current,
+    ]);
   };
 
-  const handleSend = () => {
+  const uploadFile = async (file: File) => {
+    const response = await fetch("/upload", {
+      method: "POST",
+      headers: {
+        "x-file-name": file.name,
+        "x-file-type": file.type || "application/octet-stream",
+      },
+      body: file,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed with status ${response.status}`);
+    }
+
+    const payload = (await response.json()) as {
+      url: string;
+      bucket: string;
+      key: string;
+      contentType: string;
+      fileId: string;
+      size: number;
+      originalName?: string;
+    };
+
+    const uploadedFile: UploadedFile = {
+      _id: payload.fileId,
+      url: payload.url,
+      bucket: payload.bucket,
+      key: payload.key,
+      contentType: payload.contentType,
+      size: payload.size,
+      originalName: payload.originalName,
+      createdAt: new Date(),
+    };
+
+    return uploadedFile;
+  };
+
+  const handleSend = async () => {
     if (disableSend) return;
 
     const trimmedCommand = messageInput.trim();
     const hasMessage = trimmedCommand.length > 0;
-    const filesToSend = pendingFiles;
+    const filesToSend = pendingAttachments;
 
     if (hasMessage) {
       onSendMessage();
@@ -95,31 +136,73 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     }
 
     if (filesToSend.length > 0) {
-      filesToSend.forEach((file) => {
-        const fileWithInstruction = {
-          ...file,
-          instruction: trimmedCommand || undefined,
-        };
+      setIsUploadingAttachments(true);
+      let allUploadsSucceeded = true;
 
-        onAnalyzeFile(fileWithInstruction, trimmedCommand);
-      });
+      for (const attachment of filesToSend) {
+        setAttachments((current) =>
+          current.map((item) =>
+            item.id === attachment.id
+              ? {
+                  ...item,
+                  instruction: trimmedCommand || undefined,
+                  error: undefined,
+                }
+              : item
+          )
+        );
 
-      setUploadedFiles((current) =>
-        current.map((file) =>
-          filesToSend.some((pending) => pending._id === file._id)
-            ? {
-                ...file,
-                instruction: trimmedCommand || undefined,
-                sent: true,
-              }
-            : file
-        )
-      );
+        try {
+          const uploaded = await uploadFile(attachment.file);
+          const fileWithInstruction: UploadedFile = {
+            ...uploaded,
+            instruction: trimmedCommand || undefined,
+          };
+
+          onAnalyzeFile(fileWithInstruction, trimmedCommand);
+
+          setAttachments((current) =>
+            current.map((item) =>
+              item.id === attachment.id
+                ? {
+                    ...item,
+                    uploaded,
+                    instruction: trimmedCommand || undefined,
+                    sent: true,
+                    error: undefined,
+                  }
+                : item
+            )
+          );
+        } catch (error) {
+          console.error("Upload failed", error);
+          allUploadsSucceeded = false;
+          setAttachments((current) =>
+            current.map((item) =>
+              item.id === attachment.id
+                ? {
+                    ...item,
+                    error:
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to upload file",
+                  }
+                : item
+            )
+          );
+        }
+      }
+
+      setIsUploadingAttachments(false);
+
+      if (allUploadsSucceeded) {
+        setAttachments([]);
+      }
     }
   };
 
   const handleRemoveFile = (fileId: string) => {
-    setUploadedFiles((current) => current.filter((file) => file._id !== fileId));
+    setAttachments((current) => current.filter((file) => file.id !== fileId));
   };
 
   return (
@@ -202,9 +285,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           </div>
         ))}
 
-        {uploadedFiles.map((file) => (
-          <FileComponent key={file._id} file={file} align="right" />
-        ))}
+        {attachments
+          .filter((file) => file.uploaded)
+          .map((file) => (
+            <FileComponent
+              key={file.id}
+              file={{ ...file.uploaded!, sent: file.sent }}
+              align="right"
+            />
+          ))}
 
         {isProcessing && (
           <div className="flex justify-start">
@@ -223,35 +312,61 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
       <footer className="bg-white border-t p-4">
         <div className="flex flex-col gap-3">
-          {uploadedFiles.length > 0 && (
+          {attachments.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase text-gray-600">Attached files</p>
               <div className="flex flex-wrap gap-3">
-                {uploadedFiles.map((file) => (
-                  <div
-                    key={file._id}
-                    className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 shadow-sm max-w-xl"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate">
-                        {file.originalName || file.key}
-                      </p>
-                      <p className="text-[11px] text-gray-600">{file.contentType}</p>
-                      {file.sent && (
-                        <p className="mt-1 text-[11px] font-semibold uppercase text-green-700">
-                          Sent
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFile(file._id)}
-                      className="text-xs font-semibold text-gray-600 hover:text-red-600"
+                {attachments.map((attachment) => {
+                  const displayName =
+                    attachment.uploaded?.originalName ||
+                    attachment.uploaded?.key ||
+                    attachment.file.name;
+                  const displayType =
+                    attachment.uploaded?.contentType ||
+                    attachment.file.type ||
+                    "Unknown file type";
+                  const status = attachment.error
+                    ? attachment.error
+                    : attachment.sent
+                      ? "Sent"
+                      : isUploadingAttachments
+                        ? "Uploading..."
+                        : "Pending send";
+
+                  return (
+                    <div
+                      key={attachment.id}
+                      className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 shadow-sm max-w-xl"
                     >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold truncate">
+                          {displayName}
+                        </p>
+                        <p className="text-[11px] text-gray-600">{displayType}</p>
+                        {status && (
+                          <p
+                            className={`mt-1 text-[11px] font-semibold uppercase ${
+                              attachment.error
+                                ? "text-red-700"
+                                : attachment.sent
+                                  ? "text-green-700"
+                                  : "text-gray-700"
+                            }`}
+                          >
+                            {status}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(attachment.id)}
+                        className="text-xs font-semibold text-gray-600 hover:text-red-600"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -269,11 +384,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             <div className="flex flex-row gap-2">
               <div className="flex gap-2 justify-end">
                 <UploadFileButton
-                  onUploadComplete={handleUploadComplete}
+                  onFileSelected={handleFileSelected}
                   onUploadError={(message) =>
                     console.error("Upload failed in MainLayout", message)
                   }
                   disabled={isProcessing || isLocked}
+                  existingFiles={attachments.map((file) => ({
+                    name: file.file.name,
+                    size: file.file.size,
+                  }))}
                   label="Upload file"
                 />
 

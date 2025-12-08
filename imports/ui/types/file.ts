@@ -5,3 +5,12 @@ export type UploadedFile = FileDoc & {
   instruction?: string;
   sent?: boolean;
 };
+
+export type Attachment = {
+  id: string;
+  file: File;
+  uploaded?: UploadedFile;
+  instruction?: string;
+  sent?: boolean;
+  error?: string;
+};
