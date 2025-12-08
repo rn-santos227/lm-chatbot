@@ -2,12 +2,15 @@ from collections import defaultdict
 from io import BytesIO
 from statistics import mean
 from typing import Dict, List, Tuple
+from xml.etree import ElementTree
+from zipfile import BadZipFile, ZipFile
+from pypdf import PdfReader
 
 import pytesseract
 from pdf2image import convert_from_bytes
 from PIL import Image, ImageOps
 
-from src.sanitizer import is_image_mime, is_pdf_mime
+from src.sanitizer import is_doc_mime, is_image_mime, is_pdf_mime, is_text_mime
 
 def _preprocess_image(data: bytes) -> Image.Image:
     image = Image.open(BytesIO(data))
@@ -122,7 +125,7 @@ def ocr_image(data: bytes) -> str:
 
     return text
 
-def ocr_pdf(data: bytes) -> str:
+def _ocr_pdf_images(data: bytes) -> str:
     pages = convert_from_bytes(data, dpi=300)
     text_blocks = []
 
@@ -134,7 +137,99 @@ def ocr_pdf(data: bytes) -> str:
 
     return "\n\n".join(text_blocks)
 
+def _extract_pdf_metadata(reader: PdfReader) -> str:
+    if not reader.metadata:
+        return ""
+
+    metadata_lines = []
+    for key, value in sorted(reader.metadata.items(), key=lambda item: item[0]):
+        if value is None:
+            continue
+        cleaned_key = key.lstrip("/")
+        metadata_lines.append(f"{cleaned_key}: {value}")
+
+    return "\n".join(metadata_lines)
+
+def _extract_pdf_text(reader: PdfReader) -> str:
+    text_blocks: list[str] = []
+
+    for index, page in enumerate(reader.pages, start=1):
+        try:
+            page_text = page.extract_text() or ""
+        except Exception:
+            page_text = ""
+
+        cleaned = page_text.strip()
+        if cleaned:
+            text_blocks.append(f"Page {index}:\n{cleaned}")
+
+    return "\n\n".join(text_blocks)
+
+def _open_pdf_reader(data: bytes) -> PdfReader:
+    try:
+        reader = PdfReader(BytesIO(data))
+    except Exception as exc:
+        raise ValueError("Failed to parse PDF content") from exc
+
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception as exc:
+            raise ValueError("Encrypted PDFs are not supported") from exc
+
+    return reader
+
+def _combine_pdf_sections(metadata: str, content: str) -> str:
+    sections = []
+
+    if metadata:
+        sections.append(f"Metadata:\n{metadata}")
+
+    if content:
+        sections.append(content)
+
+    return "\n\n".join(sections) if sections else ""
+
+def ocr_pdf(data: bytes) -> str:
+    reader = _open_pdf_reader(data)
+    metadata = _extract_pdf_metadata(reader)
+    extracted_text = _extract_pdf_text(reader)
+
+    if extracted_text:
+        return _combine_pdf_sections(metadata, extracted_text)
+
+    image_text = _ocr_pdf_images(data)
+    return _combine_pdf_sections(metadata, image_text)
+
+def _extract_plain_text(file_bytes: bytes) -> str:
+    return file_bytes.decode("utf-8", errors="replace")
+
+def _extract_docx(file_bytes: bytes) -> str:
+    try:
+        with ZipFile(BytesIO(file_bytes)) as archive:
+            with archive.open("word/document.xml") as document_xml:
+                xml_content = document_xml.read()
+    except (KeyError, BadZipFile) as exc:
+        raise ValueError("Invalid DOCX content") from exc
+
+    namespace = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    root = ElementTree.fromstring(xml_content)
+
+    paragraphs: list[str] = []
+    for paragraph in root.findall(".//w:p", namespace):
+        texts = [node.text for node in paragraph.findall(".//w:t", namespace) if node.text]
+        if texts:
+            paragraphs.append("".join(texts))
+
+    return "\n\n".join(paragraphs)
+
 def run_ocr(file_bytes: bytes, mime_type: str) -> str:
+    if is_text_mime(mime_type):
+        return _extract_plain_text(file_bytes)
+
+    if is_doc_mime(mime_type):
+        return _extract_docx(file_bytes)
+
     if is_pdf_mime(mime_type):
         return ocr_pdf(file_bytes)
 

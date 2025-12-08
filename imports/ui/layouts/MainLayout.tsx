@@ -256,10 +256,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         {activeChat?.messages.map((message: ChatSession['messages'][number]) => {
           const isUser = message.sender === "user";
           const visibleText = message.displayText ?? message.content;
+          const hasAttachmentInstruction = message.attachments?.some(
+            (attachment) => Boolean(attachment.instruction)
+          );
+          const hasDuplicateInstructionText =
+            hasAttachmentInstruction &&
+            Boolean(message.displayText) &&
+            message.attachments?.every(
+              (attachment) =>
+                attachment.instruction &&
+                attachment.instruction === message.displayText
+            );
+          const shouldShowTextBubble =
+            Boolean(visibleText) && !hasDuplicateInstructionText;
 
           return (
             <div key={message.id} className="space-y-2">
-              {visibleText && (
+              {shouldShowTextBubble && (
                 <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                   <div
                     className={`max-w-3xl rounded-2xl px-4 py-3 shadow text-sm leading-relaxed border message-bubble ${

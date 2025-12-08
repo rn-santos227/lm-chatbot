@@ -1,15 +1,28 @@
 from io import BytesIO
 from typing import Final
+from zipfile import BadZipFile, ZipFile
 
 from PIL import Image
 
 MAX_FILE_SIZE_BYTES: Final[int] = 20 * 1024 * 1024
 MAX_IMAGE_PIXELS: Final[int] = 50_000_000
 SUPPORTED_IMAGE_MIME_TOKENS: Final[tuple[str, ...]] = ("jpeg", "jpg", "png", "bmp", "tiff")
-
+TEXT_MIME_TOKENS: Final[tuple[str, ...]] = ("text/", "csv", "plain")
+DOC_MIME_TOKENS: Final[tuple[str, ...]] = (
+    "officedocument.wordprocessingml.document",
+    "msword",
+)
 
 def normalize_mime_type(mime_type: str) -> str:
     return mime_type.strip().lower()
+
+def _sanitize_docx(file_bytes: bytes) -> None:
+    try:
+        with ZipFile(BytesIO(file_bytes)) as archive:
+            if "word/document.xml" not in archive.namelist():
+                raise ValueError("DOCX archive missing document content")
+    except BadZipFile as exc:
+        raise ValueError("Invalid DOCX archive structure") from exc
 
 
 def _guard_empty_and_size(file_bytes: bytes) -> None:
@@ -49,6 +62,13 @@ def sanitize_file(file_bytes: bytes, mime_type: str) -> bytes:
     if is_image_mime(mime_type):
         _sanitize_image(file_bytes)
         return file_bytes
+    
+    if is_doc_mime(mime_type):
+        _sanitize_docx(file_bytes)
+        return file_bytes
+
+    if is_text_mime(mime_type):
+        return file_bytes
 
     raise ValueError(f"Unsupported MIME type for OCR: {mime_type}")
 
@@ -59,3 +79,11 @@ def is_pdf_mime(mime_type: str) -> bool:
 
 def is_image_mime(mime_type: str) -> bool:
     return any(token in mime_type for token in SUPPORTED_IMAGE_MIME_TOKENS)
+
+
+def is_text_mime(mime_type: str) -> bool:
+    return any(token in mime_type for token in TEXT_MIME_TOKENS)
+
+
+def is_doc_mime(mime_type: str) -> bool:
+    return any(token in mime_type for token in DOC_MIME_TOKENS)
