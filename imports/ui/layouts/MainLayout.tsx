@@ -1,6 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ChatSession } from "../types/session";
 import { formatChatHtml } from "../utils/formatter";
+
+import { UploadFileButton } from "../components/UploadFileButton";
+import { FileComponent } from "../components/FileComponent";
+import type { UploadedFile } from "../types/file";
 
 interface MainLayoutProps {
   userName: string;
@@ -38,6 +42,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 }) => {
   const disableSend = !messageInput.trim() || !activeChat || isLocked;
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    }
+  }, [activeChat?.id, activeChat?.messages.length, isProcessing]);
 
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLTextAreaElement>
@@ -50,13 +62,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     }
   };
 
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-
-    if (container) {
-      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-    }
-  }, [activeChat?.id, activeChat?.messages.length, isProcessing]);
+  const handleUploadComplete = (file: UploadedFile) => {
+    setUploadedFiles((current) => [file, ...current]);
+  };
 
   return (
     <main className="flex-1 flex flex-col bg-gray-100 text-gray-900 min-h-screen">
@@ -138,6 +146,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           </div>
         ))}
 
+        {uploadedFiles.map((file) => (
+          <FileComponent key={file._id} file={file} align="right" />
+        ))}
+
         {isProcessing && (
           <div className="flex justify-start">
             <div className="max-w-3xl rounded-2xl px-4 py-3 shadow text-sm leading-relaxed border bg-white text-gray-900 border-gray-200 flex items-center gap-2">
@@ -157,6 +169,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             className="flex-1 h-24 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             placeholder="Send a message to the assistant..."
             disabled={isLocked}
+          />
+
+          <UploadFileButton
+            onUploadComplete={handleUploadComplete}
+            onUploadError={(message) =>
+              console.error("Upload failed in MainLayout", message)
+            }
+            disabled={isProcessing}
+            label="Upload file"
           />
 
           <button
