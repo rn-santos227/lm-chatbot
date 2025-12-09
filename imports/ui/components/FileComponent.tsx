@@ -10,6 +10,8 @@ const isDocument = (contentType: string) =>
   contentType.includes("officedocument") ||
   contentType.startsWith("text/");
 
+const isAudio = (contentType: string) => contentType.startsWith("audio/");
+
 interface FileComponentProps {
   file: UploadedFile;
   align?: "left" | "right";
@@ -75,6 +77,13 @@ export const FileComponent: React.FC<FileComponentProps> = ({
                 src={file.url}
                 alt={file.originalName || "Uploaded file"}
                 className="max-h-64 w-full object-cover"
+              />
+            ) : isAudio(file.contentType) ? (
+              <audio
+                controls
+                src={file.url}
+                className="w-full"
+                aria-label={`Audio attachment ${file.originalName || "file"}`}
               />
             ) : isDocument(file.contentType) ? (
               <a
