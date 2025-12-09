@@ -52,7 +52,6 @@ export const FileComponent: React.FC<FileComponentProps> = ({
             </a>
           </div>
 
-
           {file.instruction && (
             <div
               className={`text-xs rounded-lg px-3 py-2 border ${
