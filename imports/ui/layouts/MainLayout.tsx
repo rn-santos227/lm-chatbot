@@ -4,8 +4,10 @@ import { formatChatHtml } from "../utils/formatter";
 
 import { UploadFileButton } from "../components/UploadFileButton";
 import { FileComponent } from "../components/FileComponent";
+import { AudioPlayerComponent } from "../components/AudioPlayerComponent";
 import type { UploadedFile, Attachment } from "../types/file";
 import { createId } from "../hooks/chatSessionHelpers";
+import { useSpeechPlayback } from "../hooks/useSpeechPlayback";
 
 interface MainLayoutProps {
   userName: string;
@@ -54,6 +56,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     !activeChat ||
     isLocked;
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const { isSupported: isSpeechSupported, speakingId, speak } = useSpeechPlayback();
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -269,6 +272,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             );
           const shouldShowTextBubble =
             Boolean(visibleText) && !hasDuplicateInstructionText;
+          const playbackText = message.content;
+          const canPlayVoice =
+            !isUser && isSpeechSupported && Boolean(playbackText?.trim());
 
           return (
             <div key={message.id} className="space-y-2">
@@ -286,9 +292,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                         {isUser ? userName || "User" : "Assistant"}
                       </span>
 
-                      <span className="text-[10px] opacity-70">
-                        {formattedTimestamp(message.timestamp)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] opacity-70">
+                          {formattedTimestamp(message.timestamp)}
+                        </span>
+                      </div>
                     </div>
 
                     <div
@@ -297,6 +305,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                     />
                   </div>
                 </div>
+              )}
+
+              {canPlayVoice && (
+                <AudioPlayerComponent
+                  align="left"
+                  isPlaying={speakingId === message.id}
+                  onToggle={() => playbackText && speak(message.id, playbackText)}
+                  timestamp={formattedTimestamp(message.timestamp)}
+                  subtitle="Hear this assistant response"
+                />
               )}
 
               {message.attachments?.map((file, index) => (
