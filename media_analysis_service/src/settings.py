@@ -9,5 +9,6 @@ class Settings:
     MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
     MINIO_REGION = os.getenv("MINIO_REGION", "us-east-1")
     MINIO_BUCKET = os.getenv("MINIO_BUCKET", "ocr-bucket")
+    MINIO_PUBLIC_BASE_URL = os.getenv("MINIO_PUBLIC_BASE_URL", MINIO_ENDPOINT)
 
 settings = Settings()

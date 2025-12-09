@@ -2,9 +2,10 @@ from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.audio_analyzer import analyze_voice
-from src.minio_client import fetch_file
+from src.minio_client import fetch_file, object_url
 from src.ocr_engine import run_ocr
 from src.sanitizer import normalize_mime_type, sanitize_file
+from src.settings import settings
 
 app = FastAPI()
 
@@ -41,11 +42,13 @@ class AudioRequest(BaseModel):
 
 class AudioResponse(BaseModel):
     text: str
+    transcript: str = Field(alias="transcript")
     duration_seconds: float = Field(alias="durationSeconds")
     rms_amplitude: float = Field(alias="rmsAmplitude")
     sample_rate: int = Field(alias="sampleRate")
     bucket: str
     key: str
+    url: str
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -76,7 +79,11 @@ def do_ocr(req: OCRRequest):
 @app.post("/transcribe", response_model=AudioResponse)
 def transcribe_audio(req: AudioRequest):
     try:
-        audio_bytes = fetch_file(req.bucket, req.key)
+        object_bucket = req.bucket or settings.MINIO_BUCKET
+        object_key = req.key
+
+        audio_bytes = fetch_file(object_bucket, object_key)
+
         summary, duration, rms, sample_rate = analyze_voice(
             audio_bytes, req.mime_type
         )
@@ -93,9 +100,11 @@ def transcribe_audio(req: AudioRequest):
 
     return AudioResponse(
         text=summary,
+        transcript=summary,
         duration_seconds=duration,
         rms_amplitude=rms,
         sample_rate=sample_rate,
-        bucket=req.bucket,
-        key=req.key,
+        bucket=object_bucket,
+        key=object_key,
+        url=object_url(object_bucket, object_key),
     )
