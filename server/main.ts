@@ -8,6 +8,7 @@ import "../imports/api/files/file.methods";
 import "../imports/api/messages/message.publications";
 import "../imports/api/messages/message.methods";
 
+import "../imports/api/audio/audio.methods";
 import "../imports/api/lmstudio/lmstudio.methods";
 import "../imports/api/ocr/ocr.methods";
 
