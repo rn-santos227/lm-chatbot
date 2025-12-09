@@ -165,7 +165,7 @@ export const useChatSessions = (
   const analyzeFile = useCallback(
     async (file: UploadedFile, command?: string) => {
       if (!activeChat) {
-        console.warn("No active chat available for OCR analysis");
+        console.warn("No active chat available for file analysis");
         return;
       }
 
@@ -173,32 +173,49 @@ export const useChatSessions = (
       const threadId = await ensureThreadId(activeChat);
       if (!threadId) {
         setIsProcessing(false);
+        setProcessingStatus(null);
         return;
       }
 
       try {
         const trimmedCommand = command?.trim();
+        const isAudioFile = file.contentType?.startsWith("audio/");
         const commandText =
           trimmedCommand && trimmedCommand.length > 0
             ? trimmedCommand
-            : "No specific command provided. Please scan the file and provide a concise summary of the contents you processed.";
+            : isAudioFile
+              ? "No specific command provided. Please transcribe the audio, identify the main intent, and list any required actions."
+              : "No specific command provided. Please scan the file and provide a concise summary of the contents you processed.";
+            
+        setProcessingStatus(
+          isAudioFile
+            ? "Submitting audio for transcription..."
+            : "Extracting text from file..."
+        );
 
-        const ocrResponse = await Meteor.callAsync("ocr.extractText", {
-          bucket: file.bucket,
-          key: file.key,
-          mime_type: file.contentType,
-        });
+        const analysisResponse = await Meteor.callAsync(
+          isAudioFile ? "audio.transcribe" : "ocr.extractText",
+          {
+            bucket: file.bucket,
+            key: file.key,
+            mime_type: file.contentType,
+          }
+        );
 
         const userMessage: Message = {
           id: createId(),
           sender: "user",
-          content: `File command: ${commandText}\n\nHere is the extracted text from ${
-            file.originalName || "an uploaded file"
-          }:\n\n${ocrResponse?.text ?? "(No text detected)"}`,
+          content: `${isAudioFile ? "Audio command" : "File command"}: ${commandText}\n\nHere is the ${
+            isAudioFile ? "transcription" : "extracted text"
+          } from ${file.originalName || "an uploaded file"}:\n\n${
+            analysisResponse?.text || "(No text detected)"
+          }`,
           displayText:
             trimmedCommand && trimmedCommand.length > 0
               ? trimmedCommand
-              : `Shared ${file.originalName || "a file"} for analysis`,
+              : `Shared ${file.originalName || "a file"} for ${
+                  isAudioFile ? "voice analysis" : "analysis"
+                }`,
           attachments: [
             {
               ...file,
@@ -210,7 +227,11 @@ export const useChatSessions = (
         };
 
         appendMessageToChat(activeChat.id, userMessage, { ensureTitle: true });
-        setProcessingStatus("Sending extracted text to LM Studio...");
+        setProcessingStatus(
+          isAudioFile
+            ? "Sending transcription to LM Studio..."
+            : "Sending extracted text to LM Studio..."
+        );
 
         const response = await Meteor.callAsync(
           "messages.userSend",
