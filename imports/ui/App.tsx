@@ -29,6 +29,7 @@ export const App = () => {
     activeChat,
     activeChatId,
     isProcessing,
+    processingStatus,
     isHistoryLoading,
     canLoadMoreHistory,
     setActiveChatId,
@@ -166,6 +167,7 @@ export const App = () => {
           onSendMessage={handleSendMessage}
           onAnalyzeFile={analyzeFile}
           isProcessing={isProcessing}
+          processingStatus={processingStatus}
           isHistoryLoading={isHistoryLoading}
           canLoadMoreHistory={canLoadMoreHistory}
           onLoadOlderMessages={loadOlderMessages}
@@ -182,6 +184,7 @@ export const App = () => {
         onClose={() => setShowNameModal(false)}
         onSave={handleSaveName}
       />
+
       <NewChatModal
         isOpen={showNewChatModal}
         chatTitle={pendingChatTitle}
