@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.minio_client import fetch_file
 from src.ocr_engine import run_ocr
