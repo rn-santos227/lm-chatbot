@@ -1,7 +1,8 @@
 export interface AudioTranscriptionRequest {
-  bucket: string;
-  key: string;
+  bucket?: string;
+  key?: string;
   mime_type: string;
+  dataBase64?: string;
 }
 
 export interface AudioTranscriptionResponse {
@@ -11,4 +12,7 @@ export interface AudioTranscriptionResponse {
   durationSeconds?: number;
   rmsAmplitude?: number;
   sampleRate?: number;
+  bucket?: string;
+  key?: string;
+  url?: string;
 }
